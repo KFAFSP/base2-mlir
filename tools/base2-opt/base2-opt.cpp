@@ -3,7 +3,9 @@
 /// @file
 /// @author     Karl F. A. Friebel (karl.friebel@tu-dresden.de)
 
+#include "base2-mlir/Conversion/Passes.h"
 #include "base2-mlir/Dialect/Base2/IR/Base2.h"
+#include "base2-mlir/Dialect/SoftFloat/IR/SoftFloat.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/InitAllDialects.h"
@@ -18,8 +20,10 @@ int main(int argc, char* argv[])
     registerAllDialects(registry);
 
     registry.insert<base2::Base2Dialect>();
+    registry.insert<softfloat::SoftFloatDialect>();
 
     registerAllPasses();
+    registerBase2ConversionPasses();
 
     return asMainReturnCode(
         MlirOptMain(argc, argv, "base2-mlir optimizer driver\n", registry));
