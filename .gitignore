@@ -1,8 +1,8 @@
 build
-c-test/SoftFloat/temp
-c-test/rescheduled/temp
-c-test/rescheduled/result
-c-test/rescheduled/.ipynb_checkpoints
+# c-test/SoftFloat/temp
+# c-test/rescheduled/temp
+# c-test/rescheduled/result
+# c-test/rescheduled/.ipynb_checkpoints
 test/debug.mlir
 third-party
 .vscode
