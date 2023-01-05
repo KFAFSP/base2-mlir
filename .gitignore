@@ -1,5 +1,6 @@
 build
 c-test/SoftFloat/temp
+c-test/rescheduled/data/data_gen
 c-test/rescheduled/temp
 c-test/rescheduled/result
 c-test/rescheduled/.ipynb_checkpoints

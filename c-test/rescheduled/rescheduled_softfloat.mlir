@@ -6,10 +6,7 @@
 
 module {
 
-    func.func @cast_float(%a: f64) -> !scalar attributes {llvm.emit_c_interface} {
-        %exp_bits = arith.constant 11 : i8
-        %frac_bits = arith.constant 52 : i8
-        %exp_bias = arith.constant -1023 : i32
+    func.func @cast_float(%a: f64, %exp_bits : i8, %frac_bits : i8, %exp_bias : i32) -> !scalar attributes {llvm.emit_c_interface} {
         %true = arith.constant true
         %sign = arith.constant -1 : i8
 
@@ -18,12 +15,18 @@ module {
         return %1 : !scalar
     }
 
-    func.func @kernel_sf(%S: memref<11x11x!scalar>{ llvm.name = "S" }, %D: memref<11x11x11x!scalar>{ llvm.name = "D" }, %u: memref<11x11x11x!scalar>{ llvm.name = "u" }, %v: memref<11x11x11x!scalar>{ llvm.name = "v" }, %t: memref<11x11x11x!scalar>{ llvm.name = "t" }, %r: memref<11x11x11x!scalar>{ llvm.name = "r" }, %t0:  memref<11x11x11x!scalar>{ llvm.name = "t0" }, %t1: memref<11x11x11x!scalar>{ llvm.name = "t1" }, %t2: memref<11x11x11x!scalar>{ llvm.name = "t2" }, %t3: memref<11x11x11x!scalar>{ llvm.name = "t3" }) attributes {llvm.emit_c_interface} {
+    func.func @cast_to_float(%a: !scalar, %exp_bits : i8, %frac_bits : i8, %exp_bias : i32) -> f64 attributes {llvm.emit_c_interface} {
+        %true = arith.constant true
+        %sign = arith.constant -1 : i8
+
+        %1 = softfloat.casttofloat %a ( %exp_bits, %frac_bits, %exp_bias, %true, %true, %true, %true, %sign ) : f64
+
+        return %1 : f64
+    }
+
+    func.func @kernel_sf(%exp_bits : i8, %frac_bits : i8, %exp_bias : i32, %S: memref<11x11x!scalar>{ llvm.name = "S" }, %D: memref<11x11x11x!scalar>{ llvm.name = "D" }, %u: memref<11x11x11x!scalar>{ llvm.name = "u" }, %v: memref<11x11x11x!scalar>{ llvm.name = "v" }, %t: memref<11x11x11x!scalar>{ llvm.name = "t" }, %r: memref<11x11x11x!scalar>{ llvm.name = "r" }, %t0:  memref<11x11x11x!scalar>{ llvm.name = "t0" }, %t1: memref<11x11x11x!scalar>{ llvm.name = "t1" }, %t2: memref<11x11x11x!scalar>{ llvm.name = "t2" }, %t3: memref<11x11x11x!scalar>{ llvm.name = "t3" }) attributes {llvm.emit_c_interface} {
         %fzero = arith.constant 0.0 : f64
-        %zero = func.call @cast_float(%fzero) : (f64) -> !scalar
-        %exp_bits = arith.constant 11 : i8
-        %frac_bits = arith.constant 52 : i8
-        %exp_bias = arith.constant -1023 : i32
+        %zero = func.call @cast_float(%fzero, %exp_bits, %frac_bits, %exp_bias) : (f64, i8, i8, i32) -> !scalar
         %true = arith.constant true
         %sign = arith.constant -1 : i8
 

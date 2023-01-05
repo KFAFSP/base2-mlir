@@ -1,23 +1,37 @@
 #include "mlir/ExecutionEngine/CRunnerUtils.h"
 
-#include <cstdlib>
-#include <cstring>
-#include <ctime>
+#include <cmath>
 #include <fstream>
 #include <iostream>
 #include <random>
 
-#define N      11
-#define size_2 N* N
-#define size_3 N* N* N
+#define N         11
+#define size_2    N* N
+#define size_3    N* N* N
+
+#define EXP_BITS  11
+#define FRAC_BITS 27
+#define EXP_BIAS  -1023
 
 using namespace std;
 
 // TODO: compare with std version using mean square error(MSE)
 
-extern "C" int64_t _mlir_ciface_cast_float(double a);
+extern "C" int64_t _mlir_ciface_cast_float(
+    double a,
+    int8_t exp_bits,
+    int8_t frac_bits,
+    int32_t exp_bias);
+extern "C" double _mlir_ciface_cast_to_float(
+    int64_t a,
+    int8_t exp_bits,
+    int8_t frac_bits,
+    int32_t exp_bias);
 
 extern "C" void _mlir_ciface_kernel_sf(
+    int8_t exp_bits,
+    int8_t frac_bits,
+    int32_t exp_bias,
     StridedMemRefType<int64_t, 2>* S,
     StridedMemRefType<int64_t, 3>* D,
     StridedMemRefType<int64_t, 3>* u,
@@ -41,20 +55,30 @@ extern "C" void _mlir_ciface_kernel_std(
     StridedMemRefType<double, 3>* t2,
     StridedMemRefType<double, 3>* t3);
 
-double frand()
-{
-    int t = rand() % 2 + 1;
-    double fp = pow(-1, t) * (double)rand() / RAND_MAX;
-    return fp * 2.0;
-}
-
-void rand_num(int size, double* fa, int64_t* ia)
+void rand_num_frac(int size, double* fa, int64_t* ia)
 {
     double temp = 0.0;
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<> dis(-10.0, 10.0);
     for (int i = 0; i < size; i++) {
-        temp = frand();
+        temp = dis(gen);
         fa[i] = temp;
-        ia[i] = _mlir_ciface_cast_float(temp);
+        ia[i] = _mlir_ciface_cast_float(temp, EXP_BITS, FRAC_BITS, EXP_BIAS);
+    }
+}
+
+void rand_num_exp(int size, double* fa, int64_t* ia)
+{
+    double temp = 0.0;
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<unsigned int> frac_dist(0, (1 << 30) - 1);
+    std::uniform_int_distribution<int> exp_dist(-44, -15);
+    for (int i = 0; i < size; i++) {
+        temp = ldexp(frac_dist(gen), exp_dist(gen));
+        fa[i] = temp;
+        ia[i] = _mlir_ciface_cast_float(temp, EXP_BITS, FRAC_BITS, EXP_BIAS);
     }
 }
 
@@ -87,10 +111,10 @@ int main()
     int64_t i_t2_data[size_3];
     int64_t i_t3_data[size_3];
 
-    // random number for S/D/u in double and i64(sfloat)
-    rand_num(size_2, f_S_data, i_S_data);
-    rand_num(size_3, f_D_data, i_D_data);
-    rand_num(size_3, f_u_data, i_u_data);
+    // random numbers
+    rand_num_exp(size_2, f_S_data, i_S_data);
+    rand_num_exp(size_3, f_D_data, i_D_data);
+    rand_num_exp(size_3, f_u_data, i_u_data);
 
     // MemRef of standard version of kernel test
     StridedMemRefType<double, 2> f_S{
@@ -236,13 +260,6 @@ int main()
         {100, 10, 1}
     };
 
-    time_t now = time(0);
-    char buffer[32];
-    strftime(buffer, 32, "%Y-%m-%d-%H-%M-%S", localtime(&now));
-    string time_str(buffer);
-    string file_std = time_str + "_std.csv";
-    string file_sf = time_str + "_sf.csv";
-
     _mlir_ciface_kernel_std(
         &f_S,
         &f_D,
@@ -255,30 +272,10 @@ int main()
         &f_t2,
         &f_t3);
 
-    ofstream f_std;
-    f_std.open(
-        "/home/bi/Desktop/base2dialect/c-test/rescheduled/result/" + file_std,
-        ios::out | ios::trunc);
-    f_std << "v"
-          << ","
-          << "t"
-          << ","
-          << "r"
-          << ","
-          << "t0"
-          << ","
-          << "t1"
-          << ","
-          << "t2"
-          << ","
-          << "t3" << endl;
-    for (int i = 0; i < size_3; i++) {
-        f_std << f_v.data[i] << "," << f_t.data[i] << "," << f_r.data[i] << ","
-              << f_t0.data[i] << "," << f_t1.data[i] << "," << f_t2.data[i]
-              << "," << f_t3.data[i] << endl;
-    }
-
     _mlir_ciface_kernel_sf(
+        EXP_BITS,
+        FRAC_BITS,
+        EXP_BIAS,
         &i_S,
         &i_D,
         &i_u,
@@ -290,28 +287,26 @@ int main()
         &i_t2,
         &i_t3);
 
-    ofstream i_std;
-    i_std.open(
-        "/home/bi/Desktop/base2dialect/c-test/rescheduled/result/" + file_sf,
-        ios::out | ios::trunc);
-    i_std << "v"
-          << ","
-          << "t"
-          << ","
-          << "r"
-          << ","
-          << "t0"
-          << ","
-          << "t1"
-          << ","
-          << "t2"
-          << ","
-          << "t3" << endl;
+    ofstream output;
+    string file_str =
+        "/home/bi/Desktop/base2-mlir/c-test/rescheduled/result/result_"
+        + to_string(EXP_BITS) + "_" + to_string(FRAC_BITS) + "_exp.csv";
+    output.open(file_str, ios::out | ios::trunc);
+    if (!output.is_open()) {
+        cout << "Error opening file: " + file_str << endl;
+        return 1;
+    }
+    output << "v_std"
+           << ","
+           << "v_sf" << endl;
     for (int i = 0; i < size_3; i++) {
-        i_std << hex << i_v.data[i] << "," << hex << i_t.data[i] << "," << hex
-              << i_r.data[i] << "," << hex << i_t0.data[i] << "," << hex
-              << i_t1.data[i] << "," << hex << i_t2.data[i] << "," << hex
-              << i_t3.data[i] << endl;
+        output << f_v.data[i] << ","
+               << _mlir_ciface_cast_to_float(
+                      i_v.data[i],
+                      EXP_BITS,
+                      FRAC_BITS,
+                      EXP_BIAS)
+               << endl;
     }
 
     return 0;
