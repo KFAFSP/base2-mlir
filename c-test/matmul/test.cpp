@@ -9,9 +9,9 @@
 #define size_2    N* N
 #define size_3    N* N* N
 
-#define EXP_BITS  11
+#define EXP_BITS  4
 #define FRAC_BITS 52
-#define EXP_BIAS  -1023
+#define EXP_BIAS  -7
 
 using namespace std;
 
