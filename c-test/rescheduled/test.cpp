@@ -77,7 +77,6 @@ void rand_num_exp(int size, double* fa, int64_t* ia)
     std::uniform_int_distribution<int> exp_dist(-44, -15);
     for (int i = 0; i < size; i++) {
         temp = ldexp(frac_dist(gen), exp_dist(gen));
-        cout << temp << "  ";
         fa[i] = temp;
         ia[i] = _mlir_ciface_cast_float(temp, EXP_BITS, FRAC_BITS, EXP_BIAS);
     }
@@ -113,9 +112,9 @@ int main()
     int64_t i_t3_data[size_3];
 
     // random numbers
-    rand_num_exp(size_2, f_S_data, i_S_data);
-    rand_num_exp(size_3, f_D_data, i_D_data);
-    rand_num_exp(size_3, f_u_data, i_u_data);
+    rand_num_frac(size_2, f_S_data, i_S_data);
+    rand_num_frac(size_3, f_D_data, i_D_data);
+    rand_num_frac(size_3, f_u_data, i_u_data);
 
     // MemRef of standard version of kernel test
     StridedMemRefType<double, 2> f_S{
@@ -123,70 +122,70 @@ int main()
         f_S_data,
         0,
         { N, N},
-        {10, 1}
+        {11, 1}
     };
     StridedMemRefType<double, 3> f_D{
         f_D_data,
         f_D_data,
         0,
         {  N,  N, N},
-        {100, 10, 1}
+        {121, 11, 1}
     };
     StridedMemRefType<double, 3> f_u{
         f_u_data,
         f_u_data,
         0,
         {  N,  N, N},
-        {100, 10, 1}
+        {121, 11, 1}
     };
     StridedMemRefType<double, 3> f_v{
         f_v_data,
         f_v_data,
         0,
         {  N,  N, N},
-        {100, 10, 1}
+        {121, 11, 1}
     };
     StridedMemRefType<double, 3> f_t{
         f_t_data,
         f_t_data,
         0,
         {  N,  N, N},
-        {100, 10, 1}
+        {121, 11, 1}
     };
     StridedMemRefType<double, 3> f_r{
         f_r_data,
         f_r_data,
         0,
         {  N,  N, N},
-        {100, 10, 1}
+        {121, 11, 1}
     };
     StridedMemRefType<double, 3> f_t0{
         f_t0_data,
         f_t0_data,
         0,
         {  N,  N, N},
-        {100, 10, 1}
+        {121, 11, 1}
     };
     StridedMemRefType<double, 3> f_t1{
         f_t1_data,
         f_t1_data,
         0,
         {  N,  N, N},
-        {100, 10, 1}
+        {121, 11, 1}
     };
     StridedMemRefType<double, 3> f_t2{
         f_t2_data,
         f_t2_data,
         0,
         {  N,  N, N},
-        {100, 10, 1}
+        {121, 11, 1}
     };
     StridedMemRefType<double, 3> f_t3{
         f_t3_data,
         f_t3_data,
         0,
         {  N,  N, N},
-        {100, 10, 1}
+        {121, 11, 1}
     };
 
     // MemRef of softfloat version of kernel test
@@ -195,70 +194,70 @@ int main()
         i_S_data,
         0,
         { N, N},
-        {10, 1}
+        {11, 1}
     };
     StridedMemRefType<int64_t, 3> i_D{
         i_D_data,
         i_D_data,
         0,
         {  N,  N, N},
-        {100, 10, 1}
+        {121, 11, 1}
     };
     StridedMemRefType<int64_t, 3> i_u{
         i_u_data,
         i_u_data,
         0,
         {  N,  N, N},
-        {100, 10, 1}
+        {121, 11, 1}
     };
     StridedMemRefType<int64_t, 3> i_v{
         i_v_data,
         i_v_data,
         0,
         {  N,  N, N},
-        {100, 10, 1}
+        {121, 11, 1}
     };
     StridedMemRefType<int64_t, 3> i_t{
         i_t_data,
         i_t_data,
         0,
         {  N,  N, N},
-        {100, 10, 1}
+        {121, 11, 1}
     };
     StridedMemRefType<int64_t, 3> i_r{
         i_r_data,
         i_r_data,
         0,
         {  N,  N, N},
-        {100, 10, 1}
+        {121, 11, 1}
     };
     StridedMemRefType<int64_t, 3> i_t0{
         i_t0_data,
         i_t0_data,
         0,
         {  N,  N, N},
-        {100, 10, 1}
+        {121, 11, 1}
     };
     StridedMemRefType<int64_t, 3> i_t1{
         i_t1_data,
         i_t1_data,
         0,
         {  N,  N, N},
-        {100, 10, 1}
+        {121, 11, 1}
     };
     StridedMemRefType<int64_t, 3> i_t2{
         i_t2_data,
         i_t2_data,
         0,
         {  N,  N, N},
-        {100, 10, 1}
+        {121, 11, 1}
     };
     StridedMemRefType<int64_t, 3> i_t3{
         i_t3_data,
         i_t3_data,
         0,
         {  N,  N, N},
-        {100, 10, 1}
+        {121, 11, 1}
     };
 
     _mlir_ciface_kernel_std(
@@ -291,7 +290,7 @@ int main()
     ofstream output;
     string file_str =
         "/home/bi/Desktop/base2-mlir/c-test/rescheduled/result/result_"
-        + to_string(EXP_BITS) + "_" + to_string(FRAC_BITS) + "_exp.csv";
+        + to_string(EXP_BITS) + "_" + to_string(FRAC_BITS) + "_frac.csv";
     output.open(file_str, ios::out | ios::trunc);
     if (!output.is_open()) {
         cout << "Error opening file: " + file_str << endl;
