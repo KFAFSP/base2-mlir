@@ -10,7 +10,7 @@
 #define size_3    N* N* N
 
 #define EXP_BITS  11
-#define FRAC_BITS 27
+#define FRAC_BITS 52
 #define EXP_BIAS  -1023
 
 using namespace std;
@@ -77,6 +77,7 @@ void rand_num_exp(int size, double* fa, int64_t* ia)
     std::uniform_int_distribution<int> exp_dist(-44, -15);
     for (int i = 0; i < size; i++) {
         temp = ldexp(frac_dist(gen), exp_dist(gen));
+        cout << temp << "  ";
         fa[i] = temp;
         ia[i] = _mlir_ciface_cast_float(temp, EXP_BITS, FRAC_BITS, EXP_BIAS);
     }
