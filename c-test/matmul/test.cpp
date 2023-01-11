@@ -86,7 +86,6 @@ int main()
     // random numbers
     rand_num_exp(size_3, f_a_data, i_a_data);
     rand_num_exp(size_3, f_b_data, i_b_data);
-    // rand_num_exp(size_3, f_u_data, i_u_data);
 
     // MemRef of standard version of kernel test
     StridedMemRefType<double, 3> f_a{
@@ -103,12 +102,12 @@ int main()
         {  N,  N, N},
         {121, 11, 1}
     };
-    StridedMemRefType<double, 3> f_c{
+    StridedMemRefType<double, 2> f_c{
         f_c_data,
         f_c_data,
         0,
-        {N, N},
-        {1, 1}
+        { N, N},
+        {11, 1}
     };
 
     // MemRef of softfloat version of kernel test
@@ -126,15 +125,15 @@ int main()
         {  N,  N, N},
         {121, 11, 1}
     };
-    StridedMemRefType<int64_t, 3> i_c{
+    StridedMemRefType<int64_t, 2> i_c{
         i_c_data,
         i_c_data,
         0,
-        {N, N},
-        {1, 1}
+        { N, N},
+        {11, 1}
     };
 
-    _mlir_ciface_test(&f_c, &f_b, &f_c);
+    _mlir_ciface_test(&f_a, &f_b, &f_c);
 
     _mlir_ciface_test_sf(EXP_BITS, FRAC_BITS, EXP_BIAS, &i_a, &i_b, &i_c);
 
