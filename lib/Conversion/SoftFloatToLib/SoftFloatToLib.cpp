@@ -459,16 +459,30 @@ public:
         auto type = op.getResultTypes()[0];
         if (!type.template isa<softfloat::SFloatType>()) return failure();
 
-        // rewriter.replaceOpWithNewOp<linalg::GenericOp>(
-        //     op,
-        //     /*resultTypes converted*/,
-        //     adaptor.getInputs(),
-        //     adaptor.getOutputs(),
-        //     adaptor.getIndexingMaps(),
-        //     adaptor.getIteratorTypes(),
-        //     adaptor.getDoc(),
-        //     adaptor.getLibraryCall(),
-        //     /*lambda for body builder*/); // TODO: rewrite this op
+        TypeConverter* converter = this->typeConverter;
+        auto results = op.getResults();
+        SmallVector<Type> opResultTypes;
+
+        for (auto result : results) {
+            auto resultTy = converter->convertType(result.getType());
+            opResultTypes.push_back(resultTy);
+        }
+
+        auto i8Ty = IntegerType::get(rewriter.getContext(), 8);
+
+        rewriter.replaceOpWithNewOp<linalg::GenericOp>(
+            op,
+            opResultTypes,
+            adaptor.getInputs(),
+            adaptor.getOutputs(),
+            adaptor.getIndexingMapsAttr(),
+            adaptor.getIteratorTypesAttr(),
+            adaptor.getDocAttr(),
+            adaptor.getLibraryCallAttr(),
+            [&](OpBuilder &builder, Location loc, ValueRange args) {
+                Value value;
+                builder.create<linalg::YieldOp>(loc, value);
+            }); // TODO: rewrite this op
 
         // update and inplace
         // rewriter.updateRootInPlace(
