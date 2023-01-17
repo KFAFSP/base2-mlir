@@ -94,9 +94,9 @@ DynamicValue::cmp(PartialOrderingPredicate pred, DynamicValue rhs) const
 
 DynamicValue DynamicValue::min(DynamicValue rhs) const
 {
-    // NaNs propagate.
-    if (isNaN()) return *this;
-    if (rhs.isNaN()) return rhs;
+    // NaNs are treated as missing data.
+    if (isNaN()) return rhs;
+    if (rhs.isNaN()) return *this;
 
     // Try constant folding.
     if (const auto result =
@@ -118,9 +118,9 @@ DynamicValue DynamicValue::min(DynamicValue rhs) const
 
 DynamicValue DynamicValue::max(DynamicValue rhs) const
 {
-    // NaNs propagate.
-    if (isNaN()) return *this;
-    if (rhs.isNaN()) return rhs;
+    // NaNs are treated as missing data.
+    if (isNaN()) return rhs;
+    if (rhs.isNaN()) return *this;
 
     // Try constant folding.
     if (const auto result =

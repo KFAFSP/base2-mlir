@@ -172,8 +172,8 @@ struct FloatModel : InterpretableType::ExternalModel<FloatModel<Float>, Float> {
         const auto lhsVal = interpret(self, lhs);
         const auto rhsVal = interpret(self, rhs);
 
-        if (lhsVal.isNaN()) return lhs;
-        if (rhsVal.isNaN()) return rhs;
+        if (lhsVal.isNaN()) return rhs;
+        if (rhsVal.isNaN()) return lhs;
 
         return lhsVal <= rhsVal ? lhs : rhs;
     }
@@ -184,8 +184,8 @@ struct FloatModel : InterpretableType::ExternalModel<FloatModel<Float>, Float> {
         const auto lhsVal = interpret(self, lhs);
         const auto rhsVal = interpret(self, rhs);
 
-        if (lhsVal.isNaN()) return lhs;
-        if (rhsVal.isNaN()) return rhs;
+        if (lhsVal.isNaN()) return rhs;
+        if (rhsVal.isNaN()) return lhs;
 
         return lhsVal >= rhsVal ? lhs : rhs;
     }

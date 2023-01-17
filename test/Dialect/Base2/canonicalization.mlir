@@ -123,11 +123,10 @@ func.func @min_ui_zero(%arg0: ui64) -> (ui64, ui64) {
 // CHECK-LABEL: func.func @min_nan(
 // CHECK-SAME: %[[ARG0:.+]]: f32
 func.func @min_nan(%arg0: f32) -> (f32, f32) {
-    // CHECK-DAG: %[[NAN:.+]] = base2.constant 0xFFFFFFFF : f32
     %nan = base2.constant 0xFFFFFFFF : f32
     %0 = base2.min %arg0, %nan : f32
     %1 = base2.min %nan, %arg0 : f32
-    // CHECK: return %[[NAN]], %[[NAN]]
+    // CHECK: return %[[ARG0]], %[[ARG0]]
     return %0, %1 : f32, f32
 }
 
@@ -156,11 +155,10 @@ func.func @max_ui_zero(%arg0: ui64) -> (ui64, ui64) {
 // CHECK-LABEL: func.func @max_nan(
 // CHECK-SAME: %[[ARG0:.+]]: f32
 func.func @max_nan(%arg0: f32) -> (f32, f32) {
-    // CHECK-DAG: %[[NAN:.+]] = base2.constant 0xFFFFFFFF : f32
     %nan = base2.constant 0xFFFFFFFF : f32
     %0 = base2.max %arg0, %nan : f32
     %1 = base2.max %nan, %arg0 : f32
-    // CHECK: return %[[NAN]], %[[NAN]]
+    // CHECK: return %[[ARG0]], %[[ARG0]]
     return %0, %1 : f32, f32
 }
 
