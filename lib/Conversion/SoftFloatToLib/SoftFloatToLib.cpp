@@ -373,6 +373,39 @@ public:
     }
 };
 
+// Rewrite memref.alloc
+struct MemRefAllocRewriting final
+        : public OpConversionPattern<memref::AllocOp> {
+public:
+    using OpConversionPattern<memref::AllocOp>::OpConversionPattern;
+
+    MemRefAllocRewriting(
+        TypeConverter &typeConverter,
+        MLIRContext* context,
+        PatternBenefit benefit)
+            : OpConversionPattern<memref::AllocOp>(
+                typeConverter,
+                context,
+                benefit){};
+
+    LogicalResult matchAndRewrite(
+        memref::AllocOp op,
+        memref::AllocOpAdaptor adaptor,
+        ConversionPatternRewriter &rewriter) const override
+    {
+        Type newMemRefTy = getTypeConverter()->convertType(op.getType());
+
+        rewriter.replaceOpWithNewOp<memref::AllocOp>(
+            op,
+            newMemRefTy,
+            adaptor.getDynamicSizes(),
+            adaptor.getSymbolOperands(),
+            adaptor.getAlignmentAttr());
+
+        return success();
+    }
+};
+
 // Rewrite memref.load/store to cast sfloat type into i64 within memref
 struct MemRefLoadRewriting final : public OpConversionPattern<memref::LoadOp> {
 public:
@@ -468,7 +501,7 @@ public:
             opResultTypes.push_back(resultTy);
         }
 
-        auto i8Ty = IntegerType::get(rewriter.getContext(), 8);
+        // auto i8Ty = IntegerType::get(rewriter.getContext(), 8);
 
         rewriter.replaceOpWithNewOp<linalg::GenericOp>(
             op,
@@ -480,8 +513,9 @@ public:
             adaptor.getDocAttr(),
             adaptor.getLibraryCallAttr(),
             [&](OpBuilder &builder, Location loc, ValueRange args) {
-                Value value;
-                builder.create<linalg::YieldOp>(loc, value);
+                // builder.create<arith::ConstantOp>(
+                //     loc,
+                //     IntegerAttr::get(i8Ty, -1));
             }); // TODO: rewrite this op
 
         // update and inplace
@@ -618,6 +652,10 @@ void mlir::populateSoftFloatToLibConversionPatterns(
         typeConverter,
         patterns.getContext(),
         benefit);
+    patterns.add<MemRefAllocRewriting>(
+        typeConverter,
+        patterns.getContext(),
+        benefit);
     patterns.add<LinalgGenericRewriting>(
         typeConverter,
         patterns.getContext(),
@@ -695,10 +733,11 @@ void ConvertSoftFloatToLibPass::runOnOperation()
     target.addDynamicallyLegalOp<
         AffineLoadOp,
         AffineStoreOp,
+        memref::AllocOp,
         memref::LoadOp,
-        memref::StoreOp,
+        memref::StoreOp/*,
         linalg::GenericOp,
-        linalg::YieldOp>([&](Operation* op) { return converter.isLegal(op); });
+        linalg::YieldOp*/>([&](Operation* op) { return converter.isLegal(op); });
     target.addLegalDialect<
         BuiltinDialect,
         arith::ArithDialect,
