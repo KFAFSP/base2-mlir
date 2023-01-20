@@ -470,7 +470,7 @@ public:
 };
 
 // Rewrite linalg.generic
-struct LinalgGenericRewriting final
+/*struct LinalgGenericRewriting final
         : public OpConversionPattern<linalg::GenericOp> {
 public:
     using OpConversionPattern<linalg::GenericOp>::OpConversionPattern;
@@ -513,21 +513,14 @@ public:
             adaptor.getDocAttr(),
             adaptor.getLibraryCallAttr(),
             [&](OpBuilder &builder, Location loc, ValueRange args) {
-                // builder.create<arith::ConstantOp>(
-                //     loc,
-                //     IntegerAttr::get(i8Ty, -1));
             }); // TODO: rewrite this op
-
-        // update and inplace
-        // rewriter.updateRootInPlace(
-        //     /*callback lambda*/); // best for body changes
 
         return success();
     }
-};
+}; */
 
 // Rewrite linalg.yield
-struct LinalgYieldRewriting final
+/* struct LinalgYieldRewriting final
         : public OpConversionPattern<linalg::YieldOp> {
 public:
     using OpConversionPattern<linalg::YieldOp>::OpConversionPattern;
@@ -554,7 +547,7 @@ public:
 
         return success();
     }
-};
+}; */
 
 } // namespace
 
@@ -656,14 +649,14 @@ void mlir::populateSoftFloatToLibConversionPatterns(
         typeConverter,
         patterns.getContext(),
         benefit);
-    patterns.add<LinalgGenericRewriting>(
+    /* patterns.add<LinalgGenericRewriting>(
         typeConverter,
         patterns.getContext(),
         benefit);
     patterns.add<LinalgYieldRewriting>(
         typeConverter,
         patterns.getContext(),
-        benefit);
+        benefit); */
 }
 
 namespace {
