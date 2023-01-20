@@ -1,1 +1,2 @@
 add_subdirectory(SoftFloatToLib)
+add_subdirectory(Base2ToSoftFloat)

@@ -23,4 +23,19 @@ def ConvertSoftFloatToLib : Pass<"convert-softfloat-to-lib"> {
   ];
 }
 
+def ConvertBase2ToSoftFloat : Pass<"convert-base2-to-softfloat"> {
+  let summary = "Convert Base2 IEEE754 type operations to SoftFloat";
+
+  let constructor = "mlir::createConvertBase2ToSoftFloatPass()";
+
+  let dependentDialects = [
+    "arith::ArithDialect",
+    "func::FuncDialect",
+    "linalg::LinalgDialect",
+    "softfloat::SoftFloatDialect",
+    "tensor::TensorDialect",
+  ];
+}
+
+
 #endif // BASE2_CONVERSION_PASSES

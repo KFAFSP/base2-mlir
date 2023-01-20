@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "base2-mlir/Conversion/Base2ToSoftFloat/Base2ToSoftFloat.h"
 #include "base2-mlir/Conversion/SoftFloatToLib/SoftFloatToLib.h"
 
 namespace mlir {
