@@ -373,6 +373,42 @@ public:
     }
 };
 
+struct ArithSelectRewriting final
+        : public OpConversionPattern<arith::SelectOp> {
+public:
+    using OpConversionPattern<arith::SelectOp>::OpConversionPattern;
+
+    ArithSelectRewriting(
+        TypeConverter &typeConverter,
+        MLIRContext* context,
+        PatternBenefit benefit)
+            : OpConversionPattern<arith::SelectOp>(
+                typeConverter,
+                context,
+                benefit){};
+
+    LogicalResult matchAndRewrite(
+        arith::SelectOp op,
+        arith::SelectOpAdaptor adaptor,
+        ConversionPatternRewriter &rewriter) const override
+    {
+        TypeConverter* converter = this->typeConverter;
+
+        auto type = op.getResult().getType();
+        auto dstType = converter->convertType(type);
+        if (!type.template isa<softfloat::SFloatType>()) return failure();
+
+        rewriter.replaceOpWithNewOp<arith::SelectOp>(
+            op,
+            dstType,
+            adaptor.getCondition(),
+            adaptor.getTrueValue(),
+            adaptor.getFalseValue());
+
+        return success();
+    }
+};
+
 // Rewrite memref.alloc
 struct MemRefAllocRewriting final
         : public OpConversionPattern<memref::AllocOp> {
@@ -469,85 +505,86 @@ public:
     }
 };
 
-// Rewrite linalg.generic
-/*struct LinalgGenericRewriting final
-        : public OpConversionPattern<linalg::GenericOp> {
-public:
-    using OpConversionPattern<linalg::GenericOp>::OpConversionPattern;
+// // Rewrite linalg.generic
+// struct LinalgGenericRewriting final
+//         : public OpConversionPattern<linalg::GenericOp> {
+// public:
+//     using OpConversionPattern<linalg::GenericOp>::OpConversionPattern;
 
-    LinalgGenericRewriting(
-        TypeConverter &typeConverter,
-        MLIRContext* context,
-        PatternBenefit benefit)
-            : OpConversionPattern<linalg::GenericOp>(
-                typeConverter,
-                context,
-                benefit){};
+//     LinalgGenericRewriting(
+//         TypeConverter &typeConverter,
+//         MLIRContext* context,
+//         PatternBenefit benefit)
+//             : OpConversionPattern<linalg::GenericOp>(
+//                 typeConverter,
+//                 context,
+//                 benefit){};
 
-    LogicalResult matchAndRewrite(
-        linalg::GenericOp op,
-        linalg::GenericOpAdaptor adaptor,
-        ConversionPatternRewriter &rewriter) const override
-    {
-        auto type = op.getResultTypes()[0];
-        if (!type.template isa<softfloat::SFloatType>()) return failure();
+//     LogicalResult matchAndRewrite(
+//         linalg::GenericOp op,
+//         linalg::GenericOpAdaptor adaptor,
+//         ConversionPatternRewriter &rewriter) const override
+//     {
+//         auto type = op.getResultTypes()[0];
+//         if (!type.template isa<softfloat::SFloatType>()) return failure();
 
-        TypeConverter* converter = this->typeConverter;
-        auto results = op.getResults();
-        SmallVector<Type> opResultTypes;
+//         TypeConverter* converter = this->typeConverter;
+//         auto results = op.getResults();
+//         SmallVector<Type> opResultTypes;
 
-        for (auto result : results) {
-            auto resultTy = converter->convertType(result.getType());
-            opResultTypes.push_back(resultTy);
-        }
+//         for (auto result : results) {
+//             auto resultTy = converter->convertType(result.getType());
+//             opResultTypes.push_back(resultTy);
+//         }
 
-        // auto i8Ty = IntegerType::get(rewriter.getContext(), 8);
+//         // auto i8Ty = IntegerType::get(rewriter.getContext(), 8);
 
-        rewriter.replaceOpWithNewOp<linalg::GenericOp>(
-            op,
-            opResultTypes,
-            adaptor.getInputs(),
-            adaptor.getOutputs(),
-            adaptor.getIndexingMapsAttr(),
-            adaptor.getIteratorTypesAttr(),
-            adaptor.getDocAttr(),
-            adaptor.getLibraryCallAttr(),
-            [&](OpBuilder &builder, Location loc, ValueRange args) {
-            }); // TODO: rewrite this op
+//         rewriter.replaceOpWithNewOp<linalg::GenericOp>(
+//             op,
+//             opResultTypes,
+//             adaptor.getInputs(),
+//             adaptor.getOutputs(),
+//             adaptor.getIndexingMapsAttr(),
+//             adaptor.getIteratorTypesAttr(),
+//             adaptor.getDocAttr(),
+//             adaptor.getLibraryCallAttr(),
+//             [&](OpBuilder &builder, Location loc, ValueRange args) {
+//             }); // TODO: rewrite this op
 
-        return success();
-    }
-}; */
+//         return success();
+//     }
+// };
 
-// Rewrite linalg.yield
-/* struct LinalgYieldRewriting final
-        : public OpConversionPattern<linalg::YieldOp> {
-public:
-    using OpConversionPattern<linalg::YieldOp>::OpConversionPattern;
+// // Rewrite linalg.yield
+// struct LinalgYieldRewriting final
+//         : public OpConversionPattern<linalg::YieldOp> {
+// public:
+//     using OpConversionPattern<linalg::YieldOp>::OpConversionPattern;
 
-    LinalgYieldRewriting(
-        TypeConverter &typeConverter,
-        MLIRContext* context,
-        PatternBenefit benefit)
-            : OpConversionPattern<linalg::YieldOp>(
-                typeConverter,
-                context,
-                benefit){};
+//     LinalgYieldRewriting(
+//         TypeConverter &typeConverter,
+//         MLIRContext* context,
+//         PatternBenefit benefit)
+//             : OpConversionPattern<linalg::YieldOp>(
+//                 typeConverter,
+//                 context,
+//                 benefit){};
 
-    LogicalResult matchAndRewrite(
-        linalg::YieldOp op,
-        linalg::YieldOpAdaptor adaptor,
-        ConversionPatternRewriter &rewriter) const override
-    {
-        // TypeConverter* converter = this->typeConverter;
-        auto type = op.getValues().getTypes().front();
-        if (!type.template isa<softfloat::SFloatType>()) return failure();
+//     LogicalResult matchAndRewrite(
+//         linalg::YieldOp op,
+//         linalg::YieldOpAdaptor adaptor,
+//         ConversionPatternRewriter &rewriter) const override
+//     {
+//         // TypeConverter* converter = this->typeConverter;
+//         auto type = op.getValues().getTypes().front();
+//         if (!type.template isa<softfloat::SFloatType>()) return failure();
 
-        rewriter.replaceOpWithNewOp<linalg::YieldOp>(op, adaptor.getValues());
+//         rewriter.replaceOpWithNewOp<linalg::YieldOp>(op,
+//         adaptor.getValues());
 
-        return success();
-    }
-}; */
+//         return success();
+//     }
+// };
 
 } // namespace
 
@@ -634,6 +671,10 @@ void mlir::populateSoftFloatToLibConversionPatterns(
         patterns.getContext(),
         benefit);
     patterns.add<AffineStoreRewriting>(
+        typeConverter,
+        patterns.getContext(),
+        benefit);
+    patterns.add<ArithSelectRewriting>(
         typeConverter,
         patterns.getContext(),
         benefit);
@@ -726,6 +767,7 @@ void ConvertSoftFloatToLibPass::runOnOperation()
     target.addDynamicallyLegalOp<
         AffineLoadOp,
         AffineStoreOp,
+        arith::SelectOp,
         memref::AllocOp,
         memref::LoadOp,
         memref::StoreOp/*,

@@ -32,6 +32,7 @@ def ConvertBase2ToSoftFloat : Pass<"convert-base2-to-softfloat"> {
     "arith::ArithDialect",
     "func::FuncDialect",
     "linalg::LinalgDialect",
+    "scf::SCFDialect",
     "softfloat::SoftFloatDialect",
     "tensor::TensorDialect",
   ];

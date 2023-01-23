@@ -36,6 +36,10 @@ namespace memref {
 class MemRefDialect;
 } // namespace memref
 
+namespace scf {
+class SCFDialect;
+} // namespace scf
+
 namespace softfloat {
 class SoftFloatDialect;
 } // namespace softfloat

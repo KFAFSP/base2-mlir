@@ -14,6 +14,7 @@
 #include "mlir/Dialect/Func/Transforms/FuncConversions.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/Linalg/Transforms/Transforms.h"
+#include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/IR/BuiltinDialect.h"
 #include "mlir/IR/PatternMatch.h"
@@ -265,7 +266,7 @@ public:
                 hasSubnorm,
                 sign);
         if (pred == PartialOrderingPredicate::OrderedAndGreater
-            || pred == PartialOrderingPredicate::UnorderedOrEqual)
+            || pred == PartialOrderingPredicate::UnorderedOrGreater)
             rewriter.replaceOpWithNewOp<softfloat::GTOp>(
                 op,
                 dstType,
@@ -344,6 +345,179 @@ public:
     }
 };
 
+// Replace base2.bit_cast op with softfloat op
+struct BitCastOpLowering final : public OpConversionPattern<base2::BitCastOp> {
+public:
+    using OpConversionPattern<base2::BitCastOp>::OpConversionPattern;
+
+    BitCastOpLowering(
+        TypeConverter &typeConverter,
+        MLIRContext* context,
+        PatternBenefit benefit)
+            : OpConversionPattern<base2::BitCastOp>(
+                typeConverter,
+                context,
+                benefit){};
+
+    LogicalResult matchAndRewrite(
+        base2::BitCastOp op,
+        base2::BitCastOpAdaptor adaptor,
+        ConversionPatternRewriter &rewriter) const override
+    {
+        assert(adaptor.getOperands().size() == 1);
+
+        if (op.getResult().getType().template isa<ShapedType>())
+            return rewriter.notifyMatchFailure(op, "expected scalar operation");
+
+        Location loc = op->getLoc();
+
+        TypeConverter* converter = this->typeConverter;
+        auto inTy = getElementTypeOrSelf(op.getIn())
+                        .template cast<base2::IEEE754Type>();
+        auto type = getElementTypeOrSelf(op.getResult())
+                        .template cast<base2::IEEE754Type>();
+        auto dstType = converter->convertType(type);
+
+        unsigned inBitWidth = inTy.getBitWidth();
+        if (inBitWidth > 64)
+            return rewriter.notifyMatchFailure(
+                op,
+                "expected at most 64-bit number");
+        unsigned outBitWidth = type.getBitWidth();
+        if (outBitWidth > 64)
+            return rewriter.notifyMatchFailure(
+                op,
+                "expected at most 64-bit number");
+
+        Type i1Ty = IntegerType::get(rewriter.getContext(), 1);
+        Type i8Ty = IntegerType::get(rewriter.getContext(), 8);
+        Type i32Ty = IntegerType::get(rewriter.getContext(), 32);
+
+        auto in = adaptor.getIn();
+        auto in_expBits = rewriter.create<arith::ConstantOp>(
+            loc,
+            IntegerAttr::get(i8Ty, inTy.getExponentBits()));
+        auto in_fracBits = rewriter.create<arith::ConstantOp>(
+            loc,
+            IntegerAttr::get(i8Ty, inTy.getPrecision()));
+        auto in_expBias = rewriter.create<arith::ConstantOp>(
+            loc,
+            IntegerAttr::get(i32Ty, -inTy.getBias()));
+        auto out_expBits = rewriter.create<arith::ConstantOp>(
+            loc,
+            IntegerAttr::get(i8Ty, type.getExponentBits()));
+        auto out_fracBits = rewriter.create<arith::ConstantOp>(
+            loc,
+            IntegerAttr::get(i8Ty, type.getPrecision()));
+        auto out_expBias = rewriter.create<arith::ConstantOp>(
+            loc,
+            IntegerAttr::get(i32Ty, -type.getBias()));
+        auto hasRounding =
+            rewriter.create<arith::ConstantOp>(loc, IntegerAttr::get(i1Ty, 1));
+        auto hasNan =
+            rewriter.create<arith::ConstantOp>(loc, IntegerAttr::get(i1Ty, 1));
+        auto hasOne =
+            rewriter.create<arith::ConstantOp>(loc, IntegerAttr::get(i1Ty, 1));
+        auto hasSubnorm =
+            rewriter.create<arith::ConstantOp>(loc, IntegerAttr::get(i1Ty, 1));
+        auto sign =
+            rewriter.create<arith::ConstantOp>(loc, IntegerAttr::get(i8Ty, -1));
+
+        rewriter.replaceOpWithNewOp<softfloat::CastOp>(
+            op,
+            dstType,
+            in,
+            in_expBits,
+            in_fracBits,
+            in_expBias,
+            hasRounding,
+            hasNan,
+            hasOne,
+            hasSubnorm,
+            sign,
+            out_expBits,
+            out_fracBits,
+            out_expBias,
+            hasRounding,
+            hasNan,
+            hasOne,
+            hasSubnorm,
+            sign);
+
+        return success();
+    }
+};
+
+// Replace base2.max/min op with softfloat op
+template<typename Op>
+struct MinMaxOpLowering final : public OpConversionPattern<Op> {
+public:
+    using OpConversionPattern<Op>::OpConversionPattern;
+
+    MinMaxOpLowering<Op>(
+        TypeConverter &typeConverter,
+        MLIRContext* context,
+        StringRef function,
+        PatternBenefit benefit)
+            : OpConversionPattern<Op>(typeConverter, context, benefit),
+              function(function){};
+
+    LogicalResult matchAndRewrite(
+        Op op,
+        typename Op::Adaptor adaptor,
+        ConversionPatternRewriter &rewriter) const override
+    {
+        assert(adaptor.getOperands().size() == 2);
+
+        if (op.getResult().getType().template isa<ShapedType>())
+            return rewriter.notifyMatchFailure(op, "expected scalar operation");
+
+        Location loc = op->getLoc();
+
+        TypeConverter* converter = this->typeConverter;
+        auto type = getElementTypeOrSelf(op.getResult())
+                        .template cast<base2::IEEE754Type>();
+        auto dstType = converter->convertType(type);
+
+        unsigned outBitWidth = type.getBitWidth();
+        if (outBitWidth > 64)
+            return rewriter.notifyMatchFailure(
+                op,
+                "expected at most 64-bit number");
+
+        auto lhs = adaptor.getLhs();
+        auto rhs = adaptor.getRhs();
+
+        Value cmp_resl;
+        if (function == "max")
+            cmp_resl = rewriter.create<base2::CmpOp>(
+                loc,
+                IntegerType::get(rewriter.getContext(), 1),
+                PartialOrderingPredicate::UnorderedOrGreater,
+                op.getLhs(),
+                op.getRhs());
+        if (function == "min")
+            cmp_resl = rewriter.create<base2::CmpOp>(
+                loc,
+                IntegerType::get(rewriter.getContext(), 1),
+                PartialOrderingPredicate::UnorderedOrLess,
+                op.getLhs(),
+                op.getRhs());
+
+        rewriter.replaceOpWithNewOp<arith::SelectOp>(
+            op,
+            dstType,
+            cmp_resl,
+            lhs,
+            rhs);
+
+        return success();
+    }
+
+private:
+    std::string function;
+};
+
 } // namespace
 
 void mlir::populateBase2ToSoftFloatConversionPatterns(
@@ -374,6 +548,20 @@ void mlir::populateBase2ToSoftFloatConversionPatterns(
     patterns.add<CompareOpLowering>(
         typeConverter,
         patterns.getContext(),
+        benefit);
+    patterns.add<BitCastOpLowering>(
+        typeConverter,
+        patterns.getContext(),
+        benefit);
+    patterns.add<MinMaxOpLowering<base2::MinOp>>(
+        typeConverter,
+        patterns.getContext(),
+        "min",
+        benefit);
+    patterns.add<MinMaxOpLowering<base2::MaxOp>>(
+        typeConverter,
+        patterns.getContext(),
+        "max",
         benefit);
 }
 
