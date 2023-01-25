@@ -207,9 +207,11 @@ public:
         Location loc = op->getLoc();
 
         TypeConverter* converter = this->typeConverter;
-        auto type = getElementTypeOrSelf(op.getLhs())
-                        .template cast<base2::IEEE754Type>();
-        auto reslType = op.getResult().getType();
+        auto type =
+            getElementTypeOrSelf(op.getLhs())
+                .template cast<base2::IEEE754Type>(); // don't need
+                                                      // getElementTypeorSelf
+        auto reslType = op.getResult().getType();     // same as above
         auto dstType = converter->convertType(reslType);
 
         unsigned bitWidth = type.getBitWidth();
@@ -449,74 +451,77 @@ public:
 };
 
 // Replace base2.max/min op with softfloat op
-template<typename Op>
-struct MinMaxOpLowering final : public OpConversionPattern<Op> {
-public:
-    using OpConversionPattern<Op>::OpConversionPattern;
+// template<typename Op>
+// struct MinMaxOpLowering final : public OpConversionPattern<Op> {
+// public:
+//     using OpConversionPattern<Op>::OpConversionPattern;
 
-    MinMaxOpLowering<Op>(
-        TypeConverter &typeConverter,
-        MLIRContext* context,
-        StringRef function,
-        PatternBenefit benefit)
-            : OpConversionPattern<Op>(typeConverter, context, benefit),
-              function(function){};
+//     MinMaxOpLowering<Op>(
+//         TypeConverter &typeConverter,
+//         MLIRContext* context,
+//         StringRef function,
+//         PatternBenefit benefit)
+//             : OpConversionPattern<Op>(typeConverter, context, benefit),
+//               function(function){};
 
-    LogicalResult matchAndRewrite(
-        Op op,
-        typename Op::Adaptor adaptor,
-        ConversionPatternRewriter &rewriter) const override
-    {
-        assert(adaptor.getOperands().size() == 2);
+//     LogicalResult matchAndRewrite(
+//         Op op,
+//         typename Op::Adaptor adaptor,
+//         ConversionPatternRewriter &rewriter) const override
+//     {
+//         assert(adaptor.getOperands().size() == 2);
 
-        if (op.getResult().getType().template isa<ShapedType>())
-            return rewriter.notifyMatchFailure(op, "expected scalar operation");
+//         if (op.getResult().getType().template isa<ShapedType>())
+//             return rewriter.notifyMatchFailure(op, "expected scalar
+//             operation");
 
-        Location loc = op->getLoc();
+//         Location loc = op->getLoc();
 
-        TypeConverter* converter = this->typeConverter;
-        auto type = getElementTypeOrSelf(op.getResult())
-                        .template cast<base2::IEEE754Type>();
-        auto dstType = converter->convertType(type);
+//         TypeConverter* converter = this->typeConverter;
+//         auto type = getElementTypeOrSelf(op.getResult())
+//                         .template cast<base2::IEEE754Type>();
+//         auto dstType = converter->convertType(type);
 
-        unsigned outBitWidth = type.getBitWidth();
-        if (outBitWidth > 64)
-            return rewriter.notifyMatchFailure(
-                op,
-                "expected at most 64-bit number");
+//         unsigned outBitWidth = type.getBitWidth();
+//         if (outBitWidth > 64)
+//             return rewriter.notifyMatchFailure(
+//                 op,
+//                 "expected at most 64-bit number");
 
-        auto lhs = adaptor.getLhs();
-        auto rhs = adaptor.getRhs();
+//         auto lhs = adaptor.getLhs();
+//         auto rhs = adaptor.getRhs();
 
-        Value cmp_resl;
-        if (function == "max")
-            cmp_resl = rewriter.create<base2::CmpOp>(
-                loc,
-                IntegerType::get(rewriter.getContext(), 1),
-                PartialOrderingPredicate::UnorderedOrGreater,
-                op.getLhs(),
-                op.getRhs());
-        if (function == "min")
-            cmp_resl = rewriter.create<base2::CmpOp>(
-                loc,
-                IntegerType::get(rewriter.getContext(), 1),
-                PartialOrderingPredicate::UnorderedOrLess,
-                op.getLhs(),
-                op.getRhs());
+//         Value cmp_resl;
+//         if (function == "max")
+//             cmp_resl = rewriter.create<base2::CmpOp>(
+//                 loc,
+//                 IntegerType::get(rewriter.getContext(), 1),
+//                 PartialOrderingPredicate::OrderedAndGreater,
+//                 op.getLhs(),
+//                 op.getRhs());
+//         if (function == "min")
+//             cmp_resl = rewriter.create<base2::CmpOp>(
+//                 loc,
+//                 IntegerType::get(rewriter.getContext(), 1),
+//                 PartialOrderingPredicate::UnorderedOrLess,
+//                 op.getLhs(),
+//                 op.getRhs()); // NaN as missing number as IEEE754 old, think
+//                 of
+//                               // a better way?
 
-        rewriter.replaceOpWithNewOp<arith::SelectOp>(
-            op,
-            dstType,
-            cmp_resl,
-            lhs,
-            rhs);
+//         rewriter.replaceOpWithNewOp<arith::SelectOp>(
+//             op,
+//             dstType,
+//             cmp_resl,
+//             lhs,
+//             rhs);
 
-        return success();
-    }
+//         return success();
+//     }
 
-private:
-    std::string function;
-};
+// private:
+//     std::string function;
+// };
 
 } // namespace
 
@@ -553,16 +558,16 @@ void mlir::populateBase2ToSoftFloatConversionPatterns(
         typeConverter,
         patterns.getContext(),
         benefit);
-    patterns.add<MinMaxOpLowering<base2::MinOp>>(
-        typeConverter,
-        patterns.getContext(),
-        "min",
-        benefit);
-    patterns.add<MinMaxOpLowering<base2::MaxOp>>(
-        typeConverter,
-        patterns.getContext(),
-        "max",
-        benefit);
+    // patterns.add<MinMaxOpLowering<base2::MinOp>>(
+    //     typeConverter,
+    //     patterns.getContext(),
+    //     "min",
+    //     benefit);
+    // patterns.add<MinMaxOpLowering<base2::MaxOp>>(
+    //     typeConverter,
+    //     patterns.getContext(),
+    //     "max",
+    //     benefit);
 }
 
 namespace {
