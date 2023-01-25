@@ -22,7 +22,7 @@ def SoftFloat_Dialect : Dialect {
         Arithmetic
     }];
 
-    let emitAccessorPrefix = kEmitAccessorPrefix_Prefixed;
+    // let emitAccessorPrefix = kEmitAccessorPrefix_Prefixed;
     let useDefaultTypePrinterParser = 1;
 
     code extraClassDeclaration = [{

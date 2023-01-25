@@ -144,7 +144,7 @@ func.func @ltgt_caller(%arg0 : !softfloat.sfloat, %arg1: !softfloat.sfloat, %arg
 // CHECK: return %[[RESULT]] : i1
 
 // CHECK-LABEL: func @nan_caller
-// CHECK-SAME: %[[ARG0:.*]]: i64, %[[ARG1:.*]]: i64
+// CHECK-SAME: %[[ARG0:.*]]: i64
 // CHECK-SAME: %[[ARG2:.*]]: i8, %[[ARG3:.*]]: i8, %[[ARG4:.*]]: i32
 // CHECK-SAME: %[[ARG5:.*]]: i1, %[[ARG6:.*]]: i1, %[[ARG7:.*]]: i1, %[[ARG8:.*]]: i1, %[[ARG9:.*]]: i8
 // CHECK-SAME: -> i1
@@ -153,5 +153,5 @@ func.func @nan_caller(%arg0 : !softfloat.sfloat, %arg1 : i8, %arg2: i8, %arg3: i
 
     return %result : i1
 }
-// CHECK-DAG: %[[RESULT:.*]] = call @__float64_is_signaling_nan(%[[ARG0]], %[[ARG1]], %[[ARG2]], %[[ARG3]], %[[ARG4]], %[[ARG5]], %[[ARG6]], %[[ARG7]], %[[ARG8]], %[[ARG9]]) : (i64, i64, i8, i8, i32, i1, i1, i1, i1, i8) -> i1
+// CHECK-DAG: %[[RESULT:.*]] = call @__float64_is_signaling_nan(%[[ARG0]], %[[ARG2]], %[[ARG3]], %[[ARG4]], %[[ARG5]], %[[ARG6]], %[[ARG7]], %[[ARG8]], %[[ARG9]]) : (i64, i8, i8, i32, i1, i1, i1, i1, i8) -> i1
 // CHECK: return %[[RESULT]] : i1

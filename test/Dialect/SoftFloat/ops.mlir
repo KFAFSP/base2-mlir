@@ -69,7 +69,7 @@ func.func @test_ltgt(%arg0 : !softfloat.sfloat, %arg1: !softfloat.sfloat, %arg2 
 
 // // CHECK-LABEL: test_nan
 func.func @test_nan(%arg0 : !softfloat.sfloat, %arg1: !softfloat.sfloat, %arg2 : i8, %arg3: i8, %arg4: i32, %arg5: i1, %arg6: i1, %arg7: i1, %arg8: i1, %arg9: i8) -> i1 {
-    %0 = softfloat.nan %arg0, %arg1 ( %arg2, %arg3, %arg4, %arg5, %arg6, %arg7, %arg8, %arg9 ): i1
+    %0 = softfloat.nan %arg0 ( %arg2, %arg3, %arg4, %arg5, %arg6, %arg7, %arg8, %arg9 ): i1
     return %0 : i1
 }
 

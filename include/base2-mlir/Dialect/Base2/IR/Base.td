@@ -24,7 +24,8 @@ def Base2_Dialect : Dialect {
         binary formats.
     }];
 
-    let emitAccessorPrefix = kEmitAccessorPrefix_Prefixed;
+    // let emitAccessorPrefix = kEmitAccessorPrefix_Prefixed;
+    let useFoldAPI = kEmitFoldAdaptorFolder;
     let hasConstantMaterializer = 1;
     let useDefaultTypePrinterParser = 0;
     let useDefaultAttributePrinterParser = 1;

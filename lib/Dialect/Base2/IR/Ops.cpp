@@ -65,7 +65,7 @@ LogicalResult ConstantOp::inferReturnTypes(
     return success();
 }
 
-OpFoldResult ConstantOp::fold(ArrayRef<Attribute>) { return getValue(); }
+OpFoldResult ConstantOp::fold(FoldAdaptor) { return getValue(); }
 
 namespace {
 
@@ -111,16 +111,16 @@ bool BitCastOp::areCastCompatible(TypeRange inputs, TypeRange outputs)
     return inTy.getBitWidth() == outTy.getBitWidth();
 }
 
-OpFoldResult BitCastOp::fold(ArrayRef<Attribute> operands)
+OpFoldResult BitCastOp::fold(FoldAdaptor adaptor)
 {
-    assert(operands.size() == 1);
+    assert(adaptor.getOperands().size() == 1);
 
     // Fold no-op casts.
     if (getType() == getIn().getType()) return getIn();
 
     // Fold constant bit casts.
     if (const auto attr =
-            operands.front().dyn_cast_or_null<BitSequenceLikeAttr>())
+            adaptor.getIn().dyn_cast_or_null<BitSequenceLikeAttr>())
         return attr.bitCastElements(getType().getElementType());
 
     // Otherwise folding is not performed.
@@ -174,16 +174,16 @@ bool ValueCastOp::areCastCompatible(TypeRange inputs, TypeRange outputs)
     return BitInterpreter::canValueCast(inputs.front(), outputs.front());
 }
 
-OpFoldResult ValueCastOp::fold(ArrayRef<Attribute> operands)
+OpFoldResult ValueCastOp::fold(FoldAdaptor adaptor)
 {
-    assert(operands.size() == 1);
+    assert(adaptor.getOperands().size() == 1);
 
     // Fold no-op casts.
     if (getType() == getIn().getType()) return getIn();
 
     // Attempt folding using the BitInterpreter.
     return BitInterpreter::valueCast(
-        operands.front(),
+        adaptor.getIn(),
         getType(),
         getRoundingMode());
 }
@@ -211,7 +211,7 @@ foldBinOp(auto fn, OperandRange variables, ArrayRef<Attribute> constants)
             : DynamicValue(variables.back()));
 }
 
-OpFoldResult CmpOp::fold(ArrayRef<Attribute> operands)
+OpFoldResult CmpOp::fold(FoldAdaptor adaptor)
 {
     const auto makeSplat = [&](bool value) -> Attribute {
         if (const auto shapedTy = getType().dyn_cast<ShapedType>())
@@ -263,12 +263,12 @@ OpFoldResult CmpOp::fold(ArrayRef<Attribute> operands)
             return lhs.cmp(getPredicate(), rhs);
         },
         getOperands(),
-        operands);
+        adaptor.getOperands());
 }
 
-OpFoldResult MinOp::fold(ArrayRef<Attribute> operands)
+OpFoldResult MinOp::fold(FoldAdaptor adaptor)
 {
-    assert(operands.size() == 2);
+    assert(adaptor.getOperands().size() == 2);
 
     return foldBinOp(
         [&](DynamicValue lhs, DynamicValue rhs) -> OpFoldResult {
@@ -284,12 +284,12 @@ OpFoldResult MinOp::fold(ArrayRef<Attribute> operands)
             return lhs.min(rhs);
         },
         getOperands(),
-        operands);
+        adaptor.getOperands());
 }
 
-OpFoldResult MaxOp::fold(ArrayRef<Attribute> operands)
+OpFoldResult MaxOp::fold(FoldAdaptor adaptor)
 {
-    assert(operands.size() == 2);
+    assert(adaptor.getOperands().size() == 2);
 
     return foldBinOp(
         [&](DynamicValue lhs, DynamicValue rhs) -> OpFoldResult {
@@ -305,61 +305,61 @@ OpFoldResult MaxOp::fold(ArrayRef<Attribute> operands)
             return lhs.max(rhs);
         },
         getOperands(),
-        operands);
+        adaptor.getOperands());
 }
 
 //===----------------------------------------------------------------------===//
 // Closed arithmetic operations
 //===----------------------------------------------------------------------===//
 
-OpFoldResult AddOp::fold(ArrayRef<Attribute> operands)
+OpFoldResult AddOp::fold(FoldAdaptor adaptor)
 {
-    assert(operands.size() == 2);
+    assert(adaptor.getOperands().size() == 2);
 
     return foldBinOp(
         [&](auto &&lhs, auto &&rhs) { return lhs.add(rhs, getRoundingMode()); },
         getOperands(),
-        operands);
+        adaptor.getOperands());
 }
 
-OpFoldResult SubOp::fold(ArrayRef<Attribute> operands)
+OpFoldResult SubOp::fold(FoldAdaptor adaptor)
 {
-    assert(operands.size() == 2);
+    assert(adaptor.getOperands().size() == 2);
 
     return foldBinOp(
         [&](auto &&lhs, auto &&rhs) { return lhs.sub(rhs, getRoundingMode()); },
         getOperands(),
-        operands);
+        adaptor.getOperands());
 }
 
-OpFoldResult MulOp::fold(ArrayRef<Attribute> operands)
+OpFoldResult MulOp::fold(FoldAdaptor adaptor)
 {
-    assert(operands.size() == 2);
+    assert(adaptor.getOperands().size() == 2);
 
     return foldBinOp(
         [&](auto &&lhs, auto &&rhs) { return lhs.mul(rhs, getRoundingMode()); },
         getOperands(),
-        operands);
+        adaptor.getOperands());
 }
 
-OpFoldResult DivOp::fold(ArrayRef<Attribute> operands)
+OpFoldResult DivOp::fold(FoldAdaptor adaptor)
 {
-    assert(operands.size() == 2);
+    assert(adaptor.getOperands().size() == 2);
 
     return foldBinOp(
         [&](auto &&lhs, auto &&rhs) { return lhs.div(rhs, getRoundingMode()); },
         getOperands(),
-        operands);
+        adaptor.getOperands());
 }
 
-OpFoldResult ModOp::fold(ArrayRef<Attribute> operands)
+OpFoldResult ModOp::fold(FoldAdaptor adaptor)
 {
-    assert(operands.size() == 2);
+    assert(adaptor.getOperands().size() == 2);
 
     return foldBinOp(
         [&](auto &&lhs, auto &&rhs) { return lhs.mod(rhs); },
         getOperands(),
-        operands);
+        adaptor.getOperands());
 }
 
 //===----------------------------------------------------------------------===//
