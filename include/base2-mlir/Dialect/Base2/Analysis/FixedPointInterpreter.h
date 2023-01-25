@@ -235,14 +235,14 @@ public:
     /// @pre    `lhs`
     /// @pre    `rhs`
     [[nodiscard]] static FixedPointSemantics
-    align(FixedPointSemantics lhs, FixedPointSemantics rhs);
-    /// Aligns @p lhs and @p rhs to a common supertype.
+    promote(FixedPointSemantics lhs, FixedPointSemantics rhs);
+    /// Promotes @p lhs and @p rhs to a common supertype.
     ///
     /// @pre    `lhsSema`
     /// @pre    `lhs.size() == lhsSema.getBitWidth()`
     /// @pre    `rhsSema`
     /// @pre    `rhs.size() == lhsSema.getBitWidth()`
-    static align_result align(
+    static align_result promote(
         FixedPointSemantics lhsSema,
         const BitSequence &lhs,
         FixedPointSemantics rhsSema,

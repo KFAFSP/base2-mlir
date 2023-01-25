@@ -77,7 +77,7 @@ def Base2_BitSequenceAttr : AttrInterface<"BitSequenceAttr"> {
 
         /// Applies @p fn to the contained value.
         ///
-        /// If @p elementTy is nullptr, @see getType() is used.
+        /// If @p elementTy is nullptr, getType() is used.
         /// If @p fn returns std::nullopt, the result will be nullptr.
         ///
         /// @pre    bit width of @p elementTy and @p fn result matches
@@ -94,7 +94,7 @@ def Base2_BitSequenceAttr : AttrInterface<"BitSequenceAttr"> {
         }
         /// Combines the values contained in this and @p rhs using @p fn .
         ///
-        /// If @p elementTy is nullptr, @see getType() is used.
+        /// If @p elementTy is nullptr, getType() is used.
         /// If @p fn returns std::nullopt, the result will be nullptr.
         ///
         /// @pre    `rhs`

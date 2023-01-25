@@ -96,7 +96,7 @@ public:
 
     /// Copies the bytes of this bit sequence into @p result .
     ///
-    /// Similar to @see print(llvm::raw_ostream &), the minimum number of bytes
+    /// Similar to print(llvm::raw_ostream &), the minimum number of bytes
     /// required to fit all bits will be emitted. Inserted padding bits are 0.
     ///
     /// @pre    `endian == std::endian::big || endian == std::endian::little`
@@ -120,7 +120,7 @@ public:
 
     /// Writes @p bits to @p out as a hexadecimal bitstring literal.
     ///
-    /// See @see write(llvm::raw_ostream &) for more information.
+    /// See write(llvm::raw_ostream &) for more information.
     friend llvm::raw_ostream &
     operator<<(llvm::raw_ostream &out, const BitSequenceBase &bits)
     {
@@ -132,7 +132,7 @@ public:
     /// This overload wraps the literal in `"` quotes to ensure it can be
     /// unambiguously recovered using an associated mlir::FieldParser.
     ///
-    /// See @see write(llvm::raw_ostream &) for more information.
+    /// See write(llvm::raw_ostream &) for more information.
     friend AsmPrinter &
     operator<<(AsmPrinter &printer, const BitSequenceBase &bits)
     {
@@ -266,7 +266,7 @@ public:
 
     /// Initializes a BitSequence from @p bytes .
     ///
-    /// Performs the inverse operation of @see getBytes().
+    /// Performs the inverse operation of getBytes().
     ///
     /// @pre    `bytes.size() >= bitWidth * 8`
     /// @pre    `endian == std::endian::big || endian == std::endian::little`
@@ -276,7 +276,7 @@ public:
         std::endian endian = std::endian::native);
     /// Reads packed BitSequence values from @p bytes .
     ///
-    /// Performs the inverse operation of @see getBytes().
+    /// Performs the inverse operation of getBytes().
     ///
     /// @pre    `endian == std::endian::big || endian == std::endian::little`
     static void fromBytes(
@@ -311,7 +311,7 @@ public:
 ///
 /// If @p values are single-bit sequences, the bits will be densely-packed
 /// into bytes in LSB to MSB order. Otherwise, acts the same as
-/// @see getBytes(llvm::SmallVectorImpl<std::uint8_t> &, std::endian).
+/// getBytes(llvm::SmallVectorImpl<std::uint8_t> &, std::endian).
 ///
 /// @pre    all @p values have the same size
 /// @pre    `endian == std::endian::big || endian == std::endian::little`

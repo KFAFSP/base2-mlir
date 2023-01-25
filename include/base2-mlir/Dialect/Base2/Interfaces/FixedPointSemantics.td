@@ -197,7 +197,7 @@ def Base2_FixedPointSemantics : TypeInterface<"FixedPointSemantics"> {
         parse(MLIRContext* ctx, StringRef str);
         /// Prints abbreviated fixed-point semantics to @p out .
         ///
-        /// See @see parse(MLIRContext*, StringRef) for a format description.
+        /// See parse(MLIRContext*, StringRef) for a format description.
         void print(llvm::raw_ostream &out) const;
 
         //===--------------------------------------------------------------===//

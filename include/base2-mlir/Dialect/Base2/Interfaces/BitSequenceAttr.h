@@ -133,7 +133,7 @@ public:
 
     /// Applies @p fn to the contained values.
     ///
-    /// If @p elementTy is nullptr, @see getType() is used.
+    /// If @p elementTy is nullptr, getType() is used.
     /// If @p fn returns std::nullopt, the result will be nullptr.
     ///
     /// @pre    bit width of @p elementTy and @p fn result matches
@@ -141,7 +141,7 @@ public:
     map(UnaryBitSequenceFn fn, BitSequenceType elementTy = {}) const;
     /// Combines the values contained in this and @p rhs using @p fn .
     ///
-    /// If @p elementTy is nullptr, @see getType() is used.
+    /// If @p elementTy is nullptr, getType() is used.
     /// If @p fn returns std::nullopt, the result will be nullptr.
     ///
     /// @pre    `rhs`
@@ -285,7 +285,7 @@ public:
 
     /// Applies @p fn to all values and returns the result.
     ///
-    /// If @p elementTy is nullptr, @see getElementType() is used.
+    /// If @p elementTy is nullptr, getElementType() is used.
     /// If @p fn returns std::nullopt, the result will be nullptr.
     ///
     /// @pre    bit width of @p elementTy and @p fn result matches
@@ -301,7 +301,7 @@ public:
     }
     /// Combines the values with @p rhs using @p fn and return the result.
     ///
-    /// If @p elementTy is nullptr, @see getElementType() is used.
+    /// If @p elementTy is nullptr, getElementType() is used.
     /// If @p fn returns std::nullopt, the result will be nullptr.
     ///
     /// @pre    `rhs`
