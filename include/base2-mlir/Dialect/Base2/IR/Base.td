@@ -24,10 +24,10 @@ def Base2_Dialect : Dialect {
         binary formats.
     }];
 
-    let emitAccessorPrefix = kEmitAccessorPrefix_Prefixed;
     let hasConstantMaterializer = 1;
     let useDefaultTypePrinterParser = 0;
     let useDefaultAttributePrinterParser = 1;
+    let useFoldAPI = kEmitFoldAdaptorFolder;
 
     code extraClassDeclaration = [{
     private:
