@@ -287,7 +287,7 @@ FixedPointInterpreter::align_result alignExact(
 }
 
 FixedPointSemantics
-FixedPointInterpreter::align(FixedPointSemantics lhs, FixedPointSemantics rhs)
+FixedPointInterpreter::promote(FixedPointSemantics lhs, FixedPointSemantics rhs)
 {
     const auto [signedness, outIntBits, outFracBits] = ::align(lhs, rhs);
     if (signedness == Signedness::Signless) return FixedPointSemantics{};
@@ -299,13 +299,13 @@ FixedPointInterpreter::align(FixedPointSemantics lhs, FixedPointSemantics rhs)
         outFracBits);
 }
 
-FixedPointInterpreter::align_result FixedPointInterpreter::align(
+FixedPointInterpreter::align_result FixedPointInterpreter::promote(
     FixedPointSemantics lhsSema,
     const BitSequence &lhs,
     FixedPointSemantics rhsSema,
     const BitSequence &rhs)
 {
-    if (const auto outSema = align(lhsSema, rhsSema))
+    if (const auto outSema = promote(lhsSema, rhsSema))
         return ::alignExact(lhsSema, lhs, rhsSema, rhs, outSema);
 
     return std::nullopt;
