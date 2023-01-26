@@ -136,14 +136,14 @@ def ValueCastOp : Base2_CastOpBase<
         Syntax:
 
         ```
-        value-cast-op ::= `value_cast` ($roundingMode)? $in
-                            `:` type($in) `to` type($out)
+        value-cast-op ::= `value_cast` $in `:` type($in) `to`
+                            ($roundingMode)? type($out)
         ```
 
         Example:
 
         ```
-        %0 = base2.value_cast nearest %flt : f32 to si32
+        %0 = base2.value_cast %flt : f32 to nearest si32
         ```
     }];
 
@@ -152,7 +152,7 @@ def ValueCastOp : Base2_CastOpBase<
         Base2_RoundingModeDefaultAttr:$roundingMode);
 
     let assemblyFormat = [{
-        ($roundingMode^)? $in attr-dict `:` type($in) `to` type($out)
+        $in attr-dict `:` type($in) `to` ($roundingMode^)? type($out)
     }];
 
     let hasFolder = 1;
@@ -330,7 +330,7 @@ class Base2_ClosedArithmeticOpBase<string mnemonic, list<Trait> traits = []>
     let results = (outs Base2_InterpretableLike:$result);
 
     let assemblyFormat = [{
-        ($roundingMode^)? $lhs `,` $rhs attr-dict `:` type($result)
+        $lhs `,` $rhs attr-dict `:` ($roundingMode^)? type($result)
     }];
 
     let hasFolder = 1;
@@ -346,13 +346,13 @@ def Base2_AddOp : Base2_ClosedArithmeticOpBase<"add", [Commutative]> {
         Syntax:
 
         ```
-        add-op ::= `add` ($predicate)? $lhs, $rhs `:` type($lhs)
+        add-op ::= `add` $lhs, $rhs `:` ($roundingMode)? type($lhs)
         ```
 
         Example:
 
         ```
-        %0 = base2.add nearest %1, %2 : si16
+        %0 = base2.add %1, %2 : nearest si16
         ```
     }];
 
@@ -379,13 +379,13 @@ def Base2_SubOp : Base2_ClosedArithmeticOpBase<"sub"> {
         Syntax:
 
         ```
-        sub-op ::= `sub` ($predicate)? $lhs, $rhs `:` type($lhs)
+        sub-op ::= `sub` $lhs, $rhs `:` ($roundingMode)? type($lhs)
         ```
 
         Example:
 
         ```
-        %0 = base2.sub nearest %1, %2 : si16
+        %0 = base2.sub %1, %2 : nearest si16
         ```
     }];
 
@@ -412,13 +412,13 @@ def Base2_MulOp : Base2_ClosedArithmeticOpBase<"mul", [Commutative]> {
         Syntax:
 
         ```
-        mul-op ::= `mul` ($predicate)? $lhs, $rhs `:` type($lhs)
+        mul-op ::= `mul` $lhs, $rhs `:` ($roundingMode)? type($lhs)
         ```
 
         Example:
 
         ```
-        %0 = base2.mul nearest %1, %2 : si16
+        %0 = base2.mul %1, %2 : nearest si16
         ```
     }];
 
@@ -445,13 +445,13 @@ def Base2_DivOp : Base2_ClosedArithmeticOpBase<"div"> {
         Syntax:
 
         ```
-        div-op ::= `div` ($predicate)? $lhs, $rhs `:` type($lhs)
+        div-op ::= `div` $lhs, $rhs `:` ($roundingMode)? type($lhs)
         ```
 
         Example:
 
         ```
-        %0 = base2.div nearest %1, %2 : si16
+        %0 = base2.div %1, %2 : nearest si16
         ```
     }];
 
@@ -491,13 +491,13 @@ def Base2_ModOp
         Syntax:
 
         ```
-        mod-op ::= `mod` ($predicate)? $lhs, $rhs `:` type($lhs)
+        mod-op ::= `mod` $lhs, $rhs `:` type($lhs)
         ```
 
         Example:
 
         ```
-        %0 = base2.mod nearest %1, %2 : si16
+        %0 = base2.mod %1, %2 : si16
         ```
     }];
 

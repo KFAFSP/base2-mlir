@@ -7,7 +7,7 @@
 func.func @value_cast_splat() -> tensor<3xsi8> {
     // CHECK-DAG: %[[RET:.+]] = base2.constant dense<127> : tensor<3xsi8>
     %cst = base2.constant dense<240> : tensor<3xui8>
-    %0 = base2.value_cast nearest %cst : tensor<3xui8> to tensor<3xsi8>
+    %0 = base2.value_cast %cst : tensor<3xui8> to nearest tensor<3xsi8>
     // return %[[RET]]
     return %0 : tensor<3xsi8>
 }
@@ -15,7 +15,7 @@ func.func @value_cast_splat() -> tensor<3xsi8> {
 func.func @value_cast_dense() -> tensor<3xsi8> {
     // CHECK-DAG: %[[RET:.+]] = base2.constant dense<[0, 100, 127]> : tensor<3xsi8>
     %cst = base2.constant dense<[0, 100, 240]> : tensor<3xui8>
-    %0 = base2.value_cast nearest %cst : tensor<3xui8> to tensor<3xsi8>
+    %0 = base2.value_cast %cst : tensor<3xui8> to nearest tensor<3xsi8>
     // return %[[RET]]
     return %0 : tensor<3xsi8>
 }
@@ -59,7 +59,7 @@ func.func @add_dense() -> tensor<3xsi8> {
     // CHECK-DAG: %[[RET:.+]] = base2.constant dense<[-128, 42, 127]> : tensor<3xsi8>
     %lhs = base2.constant dense<[-10, 12, 100]> : tensor<3xsi8>
     %rhs = base2.constant dense<[-128, 30, 28]> : tensor<3xsi8>
-    %0 = base2.add nearest %lhs, %rhs : tensor<3xsi8>
+    %0 = base2.add %lhs, %rhs : nearest tensor<3xsi8>
     // return %[[RET]]
     return %0 : tensor<3xsi8>
 }

@@ -10,10 +10,10 @@ func.func @value_cast_ui_si_of() -> (si8, si8, si8, si8, si8) {
     // CHECK-DAG: %[[SAT:.+]] = base2.constant 127 : si8
     %cst = base2.constant 240 : ui8
     %0 = base2.value_cast %cst : ui8 to si8
-    %1 = base2.value_cast nearest %cst : ui8 to si8
-    %2 = base2.value_cast round_down %cst : ui8 to si8
-    %3 = base2.value_cast towards_zero %cst : ui8 to si8
-    %4 = base2.value_cast away_from_zero %cst : ui8 to si8
+    %1 = base2.value_cast %cst : ui8 to nearest si8
+    %2 = base2.value_cast %cst : ui8 to round_down si8
+    %3 = base2.value_cast %cst : ui8 to towards_zero si8
+    %4 = base2.value_cast %cst : ui8 to away_from_zero si8
     // CHECK: return %[[MOD]], %[[SAT]], %[[SAT]], %[[MOD]], %[[SAT]]
     return %0, %1, %2, %3, %4 : si8, si8, si8, si8, si8
 }
@@ -24,10 +24,10 @@ func.func @value_cast_si_ui_uf() -> (ui8, ui8, ui8, ui8, ui8) {
     // CHECK-DAG: %[[SAT:.+]] = base2.constant 0 : ui8
     %cst = base2.constant -18 : si8
     %0 = base2.value_cast %cst : si8 to ui8
-    %1 = base2.value_cast nearest %cst : si8 to ui8
-    %2 = base2.value_cast round_up %cst : si8 to ui8
-    %3 = base2.value_cast towards_zero %cst : si8 to ui8
-    %4 = base2.value_cast away_from_zero %cst : si8 to ui8
+    %1 = base2.value_cast %cst : si8 to nearest ui8
+    %2 = base2.value_cast %cst : si8 to round_up ui8
+    %3 = base2.value_cast %cst : si8 to towards_zero ui8
+    %4 = base2.value_cast %cst : si8 to away_from_zero ui8
     // CHECK: return %[[MOD]], %[[SAT]], %[[SAT]], %[[SAT]], %[[MOD]]
     return %0, %1, %2, %3, %4 : ui8, ui8, ui8, ui8, ui8
 }
@@ -38,10 +38,10 @@ func.func @value_cast_ui_ui_of() -> (ui4, ui4, ui4, ui4, ui4) {
     // CHECK-DAG: %[[SAT:.+]] = base2.constant 15 : ui4
     %cst = base2.constant 68 : ui8
     %0 = base2.value_cast %cst : ui8 to ui4
-    %1 = base2.value_cast nearest %cst : ui8 to ui4
-    %2 = base2.value_cast round_down %cst : ui8 to ui4
-    %3 = base2.value_cast towards_zero %cst : ui8 to ui4
-    %4 = base2.value_cast away_from_zero %cst : ui8 to ui4
+    %1 = base2.value_cast %cst : ui8 to nearest ui4
+    %2 = base2.value_cast %cst : ui8 to round_down ui4
+    %3 = base2.value_cast %cst : ui8 to towards_zero ui4
+    %4 = base2.value_cast %cst : ui8 to away_from_zero ui4
     // CHECK: return %[[MOD]], %[[SAT]], %[[SAT]], %[[MOD]], %[[SAT]]
     return %0, %1, %2, %3, %4 : ui4, ui4, ui4, ui4, ui4
 }
@@ -52,10 +52,10 @@ func.func @value_cast_si_si_of() -> (si4, si4, si4, si4, si4) {
     // CHECK-DAG: %[[SAT:.+]] = base2.constant 7 : si4
     %cst = base2.constant 76 : si8
     %0 = base2.value_cast %cst : si8 to si4
-    %1 = base2.value_cast nearest %cst : si8 to si4
-    %2 = base2.value_cast round_down %cst : si8 to si4
-    %3 = base2.value_cast towards_zero %cst : si8 to si4
-    %4 = base2.value_cast away_from_zero %cst : si8 to si4
+    %1 = base2.value_cast %cst : si8 to nearest si4
+    %2 = base2.value_cast %cst : si8 to round_down si4
+    %3 = base2.value_cast %cst : si8 to towards_zero si4
+    %4 = base2.value_cast %cst : si8 to away_from_zero si4
     // CHECK: return %[[MOD]], %[[SAT]], %[[SAT]], %[[MOD]], %[[SAT]]
     return %0, %1, %2, %3, %4 : si4, si4, si4, si4, si4
 }
@@ -66,10 +66,10 @@ func.func @value_cast_si_si_uf() -> (si4, si4, si4, si4, si4) {
     // CHECK-DAG: %[[SAT:.+]] = base2.constant -8 : si4
     %cst = base2.constant -18 : si8
     %0 = base2.value_cast %cst : si8 to si4
-    %1 = base2.value_cast nearest %cst : si8 to si4
-    %2 = base2.value_cast round_up %cst : si8 to si4
-    %3 = base2.value_cast towards_zero %cst : si8 to si4
-    %4 = base2.value_cast away_from_zero %cst : si8 to si4
+    %1 = base2.value_cast %cst : si8 to nearest si4
+    %2 = base2.value_cast %cst : si8 to round_up si4
+    %3 = base2.value_cast %cst : si8 to towards_zero si4
+    %4 = base2.value_cast %cst : si8 to away_from_zero si4
     // CHECK: return %[[MOD]], %[[SAT]], %[[SAT]], %[[SAT]], %[[MOD]]
     return %0, %1, %2, %3, %4 : si4, si4, si4, si4, si4
 }
@@ -123,10 +123,10 @@ func.func @add_ui_of() -> (ui4, ui4, ui4, ui4, ui4) {
     %lhs = base2.constant 7 : ui4
     %rhs = base2.constant 10 : ui4
     %0 = base2.add %lhs, %rhs : ui4
-    %1 = base2.add nearest %lhs, %rhs : ui4
-    %2 = base2.add round_down %lhs, %rhs : ui4
-    %3 = base2.add towards_zero %lhs, %rhs : ui4
-    %4 = base2.add away_from_zero %lhs, %rhs : ui4
+    %1 = base2.add %lhs, %rhs : nearest ui4
+    %2 = base2.add %lhs, %rhs : round_down ui4
+    %3 = base2.add %lhs, %rhs : towards_zero ui4
+    %4 = base2.add %lhs, %rhs : away_from_zero ui4
     // CHECK: return %[[MOD]], %[[SAT]], %[[SAT]], %[[MOD]], %[[SAT]]
     return %0, %1, %2, %3, %4 : ui4, ui4, ui4, ui4, ui4
 }
@@ -138,10 +138,10 @@ func.func @add_si_of() -> (si4, si4, si4, si4, si4) {
     %lhs = base2.constant 7 : si4
     %rhs = base2.constant 4 : si4
     %0 = base2.add %lhs, %rhs : si4
-    %1 = base2.add nearest %lhs, %rhs : si4
-    %2 = base2.add round_down %lhs, %rhs : si4
-    %3 = base2.add towards_zero %lhs, %rhs : si4
-    %4 = base2.add away_from_zero %lhs, %rhs : si4
+    %1 = base2.add %lhs, %rhs : nearest si4
+    %2 = base2.add %lhs, %rhs : round_down si4
+    %3 = base2.add %lhs, %rhs : towards_zero si4
+    %4 = base2.add %lhs, %rhs : away_from_zero si4
     // CHECK: return %[[MOD]], %[[SAT]], %[[SAT]], %[[MOD]], %[[SAT]]
     return %0, %1, %2, %3, %4 : si4, si4, si4, si4, si4
 }
@@ -153,10 +153,10 @@ func.func @add_si_uf() -> (si4, si4, si4, si4, si4) {
     %lhs = base2.constant -4 : si4
     %rhs = base2.constant -5 : si4
     %0 = base2.add %lhs, %rhs : si4
-    %1 = base2.add nearest %lhs, %rhs : si4
-    %2 = base2.add round_up %lhs, %rhs : si4
-    %3 = base2.add towards_zero %lhs, %rhs : si4
-    %4 = base2.add away_from_zero %lhs, %rhs : si4
+    %1 = base2.add %lhs, %rhs : nearest si4
+    %2 = base2.add %lhs, %rhs : round_up si4
+    %3 = base2.add %lhs, %rhs : towards_zero si4
+    %4 = base2.add %lhs, %rhs : away_from_zero si4
     // CHECK: return %[[MOD]], %[[SAT]], %[[SAT]], %[[SAT]], %[[MOD]]
     return %0, %1, %2, %3, %4 : si4, si4, si4, si4, si4
 }
@@ -172,10 +172,10 @@ func.func @sub_ui_uf() -> (ui4, ui4, ui4, ui4, ui4) {
     %lhs = base2.constant 3 : ui4
     %rhs = base2.constant 6 : ui4
     %0 = base2.sub %lhs, %rhs : ui4
-    %1 = base2.sub nearest %lhs, %rhs : ui4
-    %2 = base2.sub round_up %lhs, %rhs : ui4
-    %3 = base2.sub towards_zero %lhs, %rhs : ui4
-    %4 = base2.sub away_from_zero %lhs, %rhs : ui4
+    %1 = base2.sub %lhs, %rhs : nearest ui4
+    %2 = base2.sub %lhs, %rhs : round_up ui4
+    %3 = base2.sub %lhs, %rhs : towards_zero ui4
+    %4 = base2.sub %lhs, %rhs : away_from_zero ui4
     // CHECK: return %[[MOD]], %[[SAT]], %[[SAT]], %[[SAT]], %[[MOD]]
     return %0, %1, %2, %3, %4 : ui4, ui4, ui4, ui4, ui4
 }
@@ -187,10 +187,10 @@ func.func @sub_si_of() -> (si4, si4, si4, si4, si4) {
     %lhs = base2.constant 7 : si4
     %rhs = base2.constant -4 : si4
     %0 = base2.sub %lhs, %rhs : si4
-    %1 = base2.sub nearest %lhs, %rhs : si4
-    %2 = base2.sub round_down %lhs, %rhs : si4
-    %3 = base2.sub towards_zero %lhs, %rhs : si4
-    %4 = base2.sub away_from_zero %lhs, %rhs : si4
+    %1 = base2.sub %lhs, %rhs : nearest si4
+    %2 = base2.sub %lhs, %rhs : round_down si4
+    %3 = base2.sub %lhs, %rhs : towards_zero si4
+    %4 = base2.sub %lhs, %rhs : away_from_zero si4
     // CHECK: return %[[MOD]], %[[SAT]], %[[SAT]], %[[MOD]], %[[SAT]]
     return %0, %1, %2, %3, %4 : si4, si4, si4, si4, si4
 }
@@ -202,10 +202,10 @@ func.func @sub_si_uf() -> (si4, si4, si4, si4, si4) {
     %lhs = base2.constant -3 : si4
     %rhs = base2.constant 6 : si4
     %0 = base2.sub %lhs, %rhs : si4
-    %1 = base2.sub nearest %lhs, %rhs : si4
-    %2 = base2.sub round_up %lhs, %rhs : si4
-    %3 = base2.sub towards_zero %lhs, %rhs : si4
-    %4 = base2.sub away_from_zero %lhs, %rhs : si4
+    %1 = base2.sub %lhs, %rhs : nearest si4
+    %2 = base2.sub %lhs, %rhs : round_up si4
+    %3 = base2.sub %lhs, %rhs : towards_zero si4
+    %4 = base2.sub %lhs, %rhs : away_from_zero si4
     // CHECK: return %[[MOD]], %[[SAT]], %[[SAT]], %[[SAT]], %[[MOD]]
     return %0, %1, %2, %3, %4 : si4, si4, si4, si4, si4
 }
@@ -221,10 +221,10 @@ func.func @mul_ui_of() -> (ui4, ui4, ui4, ui4, ui4) {
     %lhs = base2.constant 3 : ui4
     %rhs = base2.constant 6 : ui4
     %0 = base2.mul %lhs, %rhs : ui4
-    %1 = base2.mul nearest %lhs, %rhs : ui4
-    %2 = base2.mul round_down %lhs, %rhs : ui4
-    %3 = base2.mul towards_zero %lhs, %rhs : ui4
-    %4 = base2.mul away_from_zero %lhs, %rhs : ui4
+    %1 = base2.mul %lhs, %rhs : nearest ui4
+    %2 = base2.mul %lhs, %rhs : round_down ui4
+    %3 = base2.mul %lhs, %rhs : towards_zero ui4
+    %4 = base2.mul %lhs, %rhs : away_from_zero ui4
     // CHECK: return %[[MOD]], %[[SAT]], %[[SAT]], %[[MOD]], %[[SAT]]
     return %0, %1, %2, %3, %4 : ui4, ui4, ui4, ui4, ui4
 }
@@ -236,10 +236,10 @@ func.func @mul_si_of() -> (si4, si4, si4, si4, si4) {
     %lhs = base2.constant -3 : si4
     %rhs = base2.constant -3 : si4
     %0 = base2.mul %lhs, %rhs : si4
-    %1 = base2.mul nearest %lhs, %rhs : si4
-    %2 = base2.mul round_down %lhs, %rhs : si4
-    %3 = base2.mul towards_zero %lhs, %rhs : si4
-    %4 = base2.mul away_from_zero %lhs, %rhs : si4
+    %1 = base2.mul %lhs, %rhs : nearest si4
+    %2 = base2.mul %lhs, %rhs : round_down si4
+    %3 = base2.mul %lhs, %rhs : towards_zero si4
+    %4 = base2.mul %lhs, %rhs : away_from_zero si4
     // CHECK: return %[[MOD]], %[[SAT]], %[[SAT]], %[[MOD]], %[[SAT]]
     return %0, %1, %2, %3, %4 : si4, si4, si4, si4, si4
 }
@@ -255,10 +255,10 @@ func.func @div_si_of() -> (si4, si4, si4, si4, si4) {
     %lhs = base2.constant -8 : si4
     %rhs = base2.constant -1 : si4
     %0 = base2.div %lhs, %rhs : si4
-    %1 = base2.div nearest %lhs, %rhs : si4
-    %2 = base2.div round_down %lhs, %rhs : si4
-    %3 = base2.div towards_zero %lhs, %rhs : si4
-    %4 = base2.div away_from_zero %lhs, %rhs : si4
+    %1 = base2.div %lhs, %rhs : nearest si4
+    %2 = base2.div %lhs, %rhs : round_down si4
+    %3 = base2.div %lhs, %rhs : towards_zero si4
+    %4 = base2.div %lhs, %rhs : away_from_zero si4
     // CHECK: return %[[MOD]], %[[SAT]], %[[SAT]], %[[MOD]], %[[SAT]]
     return %0, %1, %2, %3, %4 : si4, si4, si4, si4, si4
 }
