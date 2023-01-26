@@ -6,10 +6,10 @@
 
 #include "base2-mlir/Dialect/Base2/IR/Ops.h"
 
+#include "ShapedUtils.h"
 #include "base2-mlir/Dialect/Base2/Analysis/DynamicValue.h"
 #include "mlir/IR/OpImplementation.h"
 #include "mlir/IR/PatternMatch.h"
-#include "mlir/IR/TypeUtilities.h"
 
 #include <optional>
 
@@ -17,26 +17,6 @@
 
 using namespace mlir;
 using namespace mlir::base2;
-
-/// Obtains a type with the same shape as @p type , using @p elementTy.
-///
-/// @pre    `type`
-/// @pre    `elementTy`
-[[nodiscard]] static Type getSameShape(Type type, Type elementTy)
-{
-    if (const auto shapedTy = type.dyn_cast<ShapedType>())
-        return shapedTy.cloneWith(std::nullopt, elementTy);
-
-    return elementTy;
-}
-
-/// Obtains the I1 or container-of-I1 that matches the shape of @p type .
-///
-/// @pre    `type`
-[[nodiscard]] static Type getI1SameShape(Type type)
-{
-    return getSameShape(type, IntegerType::get(type.getContext(), 1));
-}
 
 //===- Generated implementation -------------------------------------------===//
 

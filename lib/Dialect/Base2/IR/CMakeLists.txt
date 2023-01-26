@@ -1,6 +1,7 @@
 add_mlir_dialect_library(Base2Dialect
         Attributes.cpp
         Base.cpp
+        FixedOps.cpp
         Ops.cpp
         Types.cpp
 
