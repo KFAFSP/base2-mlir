@@ -38,7 +38,7 @@ def ConvertBase2ToSoftFloat : Pass<"convert-base2-to-softfloat"> {
   ];
 }
 
-def ConvertBase2ToArith : Pass<"convert-base2-to-ariht"> {
+def ConvertBase2ToArith : Pass<"convert-base2-to-arith"> {
   let summary = "Convert Base2 to Arith operation";
 
   let constructor = "mlir::createConvertBase2ToArithPass()";
