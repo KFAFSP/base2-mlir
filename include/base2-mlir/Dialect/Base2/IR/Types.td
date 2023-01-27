@@ -24,6 +24,7 @@ def Base2_FixedPointType : Base2_Type<
             DeclareTypeInterfaceMethods<
                 Base2_InterpretableType,
                 [
+                    "canValueCast",
                     "valueCast",
                     "cmp",
                     "add",
@@ -124,7 +125,7 @@ def Base2_IEEE754Type : Base2_Type<
         [
             Base2_BitSequenceType,
             Base2_IEEE754Semantics,
-            DeclareTypeInterfaceMethods<Base2_InterpretableType, []>]> {
+            DeclareTypeInterfaceMethods<Base2_InterpretableType, ["canValueCast"]>]> {
     let mnemonic = "ieee754";
     let summary = "IEEE754 floating-point number type";
     let description = [{

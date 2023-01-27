@@ -119,6 +119,13 @@ Type FixedPointType::parse(AsmParser &parser)
     return get(parser.getContext(), signedness, integerBits, fractionalBits);
 }
 
+bool FixedPointType::canValueCast(InterpretableType from, InterpretableType to)
+    const
+{
+    const auto other = from == *this ? to : from;
+    return other.isa<FixedPointSemantics, FloatType>();
+}
+
 [[nodiscard]] static bit_result valueCastTo(
     FixedPointSemantics from,
     const BitSequence &value,
@@ -329,6 +336,13 @@ Type IEEE754Type::parse(AsmParser &parser)
         precision,
         exponentBits,
         bias);
+}
+
+bool IEEE754Type::canValueCast(InterpretableType from, InterpretableType to)
+    const
+{
+    const auto other = from == *this ? to : from;
+    return other.isa<IEEE754Semantics, FloatType>();
 }
 
 //===----------------------------------------------------------------------===//
