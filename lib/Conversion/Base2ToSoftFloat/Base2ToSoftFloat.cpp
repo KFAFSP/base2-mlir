@@ -348,22 +348,23 @@ public:
 };
 
 // Replace base2.bit_cast op with softfloat op
-struct BitCastOpLowering final : public OpConversionPattern<base2::BitCastOp> {
+struct ValueCastOpLowering final
+        : public OpConversionPattern<base2::ValueCastOp> {
 public:
-    using OpConversionPattern<base2::BitCastOp>::OpConversionPattern;
+    using OpConversionPattern<base2::ValueCastOp>::OpConversionPattern;
 
-    BitCastOpLowering(
+    ValueCastOpLowering(
         TypeConverter &typeConverter,
         MLIRContext* context,
         PatternBenefit benefit)
-            : OpConversionPattern<base2::BitCastOp>(
+            : OpConversionPattern<base2::ValueCastOp>(
                 typeConverter,
                 context,
                 benefit){};
 
     LogicalResult matchAndRewrite(
-        base2::BitCastOp op,
-        base2::BitCastOpAdaptor adaptor,
+        base2::ValueCastOp op,
+        base2::ValueCastOpAdaptor adaptor,
         ConversionPatternRewriter &rewriter) const override
     {
         assert(adaptor.getOperands().size() == 1);
@@ -554,7 +555,7 @@ void mlir::populateBase2ToSoftFloatConversionPatterns(
         typeConverter,
         patterns.getContext(),
         benefit);
-    patterns.add<BitCastOpLowering>(
+    patterns.add<ValueCastOpLowering>(
         typeConverter,
         patterns.getContext(),
         benefit);
