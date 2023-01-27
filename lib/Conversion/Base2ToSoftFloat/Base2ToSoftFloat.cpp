@@ -46,7 +46,8 @@ static std::optional<int> toNanBit(PartialOrderingPredicate predicate)
         return std::nullopt;
 }
 
-// pattern to convert arithmetic operations of type ieee754 to softfloat dialect
+// pattern to convert arithmetic operations of type ieee754 to softfloat
+// dialect
 template<typename Op>
 struct ClosedArithOpLowering final : public OpConversionPattern<Op> {
 public:
@@ -375,46 +376,16 @@ public:
         Location loc = op->getLoc();
 
         TypeConverter* converter = this->typeConverter;
-        auto inTy = getElementTypeOrSelf(op.getIn())
-                        .template cast<base2::IEEE754Type>();
-        auto type = getElementTypeOrSelf(op.getResult())
-                        .template cast<base2::IEEE754Type>();
-        auto dstType = converter->convertType(type);
 
-        unsigned inBitWidth = inTy.getBitWidth();
-        if (inBitWidth > 64)
-            return rewriter.notifyMatchFailure(
-                op,
-                "expected at most 64-bit number");
-        unsigned outBitWidth = type.getBitWidth();
-        if (outBitWidth > 64)
-            return rewriter.notifyMatchFailure(
-                op,
-                "expected at most 64-bit number");
-
+        auto inTy = op.getIn().getType();
+        auto outTy = op.getOut().getType();
+        Type dstType;
+        ValueRange args;
         Type i1Ty = IntegerType::get(rewriter.getContext(), 1);
         Type i8Ty = IntegerType::get(rewriter.getContext(), 8);
         Type i32Ty = IntegerType::get(rewriter.getContext(), 32);
 
         auto in = adaptor.getIn();
-        auto in_expBits = rewriter.create<arith::ConstantOp>(
-            loc,
-            IntegerAttr::get(i8Ty, inTy.getExponentBits()));
-        auto in_fracBits = rewriter.create<arith::ConstantOp>(
-            loc,
-            IntegerAttr::get(i8Ty, inTy.getPrecision()));
-        auto in_expBias = rewriter.create<arith::ConstantOp>(
-            loc,
-            IntegerAttr::get(i32Ty, -inTy.getBias()));
-        auto out_expBits = rewriter.create<arith::ConstantOp>(
-            loc,
-            IntegerAttr::get(i8Ty, type.getExponentBits()));
-        auto out_fracBits = rewriter.create<arith::ConstantOp>(
-            loc,
-            IntegerAttr::get(i8Ty, type.getPrecision()));
-        auto out_expBias = rewriter.create<arith::ConstantOp>(
-            loc,
-            IntegerAttr::get(i32Ty, -type.getBias()));
         auto hasRounding =
             rewriter.create<arith::ConstantOp>(loc, IntegerAttr::get(i1Ty, 1));
         auto hasNan =
@@ -426,26 +397,121 @@ public:
         auto sign =
             rewriter.create<arith::ConstantOp>(loc, IntegerAttr::get(i8Ty, -1));
 
-        rewriter.replaceOpWithNewOp<softfloat::CastOp>(
-            op,
-            dstType,
-            in,
-            in_expBits,
-            in_fracBits,
-            in_expBias,
-            hasRounding,
-            hasNan,
-            hasOne,
-            hasSubnorm,
-            sign,
-            out_expBits,
-            out_fracBits,
-            out_expBias,
-            hasRounding,
-            hasNan,
-            hasOne,
-            hasSubnorm,
-            sign);
+        if (inTy.dyn_cast<FloatType>() && outTy.dyn_cast<IEEE754Semantics>()) {
+            auto outRealTy = outTy.template cast<IEEE754Type>();
+            if (outRealTy.getBitWidth() > 64)
+                return rewriter.notifyMatchFailure(
+                    op,
+                    "expected at most 64-bit number");
+            dstType = converter->convertType(outRealTy);
+
+            auto expBits = rewriter.create<arith::ConstantOp>(
+                loc,
+                IntegerAttr::get(i8Ty, outRealTy.getExponentBits()));
+            auto fracBits = rewriter.create<arith::ConstantOp>(
+                loc,
+                IntegerAttr::get(i8Ty, outRealTy.getPrecision()));
+            auto expBias = rewriter.create<arith::ConstantOp>(
+                loc,
+                IntegerAttr::get(i32Ty, -outRealTy.getBias()));
+            rewriter.replaceOpWithNewOp<softfloat::CastFloatOp>(
+                op,
+                dstType,
+                in,
+                expBits,
+                fracBits,
+                expBias,
+                hasRounding,
+                hasNan,
+                hasOne,
+                hasSubnorm,
+                sign);
+        }
+
+        if (inTy.dyn_cast<IEEE754Semantics>() && outTy.dyn_cast<FloatType>()) {
+            auto inRealTy = inTy.template cast<IEEE754Type>();
+            if (inRealTy.getBitWidth() > 64)
+                return rewriter.notifyMatchFailure(
+                    op,
+                    "expected at most 64-bit number");
+            dstType = converter->convertType(outTy);
+
+            auto expBits = rewriter.create<arith::ConstantOp>(
+                loc,
+                IntegerAttr::get(i8Ty, inRealTy.getExponentBits()));
+            auto fracBits = rewriter.create<arith::ConstantOp>(
+                loc,
+                IntegerAttr::get(i8Ty, inRealTy.getPrecision()));
+            auto expBias = rewriter.create<arith::ConstantOp>(
+                loc,
+                IntegerAttr::get(i32Ty, -inRealTy.getBias()));
+            rewriter.replaceOpWithNewOp<softfloat::CastToFloatOp>(
+                op,
+                dstType,
+                in,
+                expBits,
+                fracBits,
+                expBias,
+                hasRounding,
+                hasNan,
+                hasOne,
+                hasSubnorm,
+                sign);
+        }
+
+        if (inTy.dyn_cast<IEEE754Semantics>()
+            && outTy.dyn_cast<IEEE754Semantics>()) {
+            auto inRealTy = inTy.template cast<IEEE754Type>();
+            auto outRealTy = outTy.template cast<IEEE754Type>();
+            if (inRealTy.getBitWidth() > 64)
+                return rewriter.notifyMatchFailure(
+                    op,
+                    "expected at most 64-bit number");
+            if (outRealTy.getBitWidth() > 64)
+                return rewriter.notifyMatchFailure(
+                    op,
+                    "expected at most 64-bit number");
+            dstType = converter->convertType(outRealTy);
+
+            auto in_expBits = rewriter.create<arith::ConstantOp>(
+                loc,
+                IntegerAttr::get(i8Ty, inRealTy.getExponentBits()));
+            auto in_fracBits = rewriter.create<arith::ConstantOp>(
+                loc,
+                IntegerAttr::get(i8Ty, inRealTy.getPrecision()));
+            auto in_expBias = rewriter.create<arith::ConstantOp>(
+                loc,
+                IntegerAttr::get(i32Ty, -inRealTy.getBias()));
+            auto out_expBits = rewriter.create<arith::ConstantOp>(
+                loc,
+                IntegerAttr::get(i8Ty, outRealTy.getExponentBits()));
+            auto out_fracBits = rewriter.create<arith::ConstantOp>(
+                loc,
+                IntegerAttr::get(i8Ty, outRealTy.getPrecision()));
+            auto out_expBias = rewriter.create<arith::ConstantOp>(
+                loc,
+                IntegerAttr::get(i32Ty, -outRealTy.getBias()));
+            rewriter.replaceOpWithNewOp<softfloat::CastOp>(
+                op,
+                dstType,
+                in,
+                in_expBits,
+                in_fracBits,
+                in_expBias,
+                hasRounding,
+                hasNan,
+                hasOne,
+                hasSubnorm,
+                sign,
+                out_expBits,
+                out_fracBits,
+                out_expBias,
+                hasRounding,
+                hasNan,
+                hasOne,
+                hasSubnorm,
+                sign);
+        }
 
         return success();
     }
@@ -637,6 +703,8 @@ void ConvertBase2ToSoftFloatPass::runOnOperation()
     // Remove unrealized casts wherever possible.
     populateReconcileUnrealizedCastsPatterns(patterns);
 
+    target.addDynamicallyLegalOp<base2::ValueCastOp>(
+        [&](Operation* op) { return converter.isLegal(op); });
     target.addLegalDialect<
         BuiltinDialect,
         arith::ArithDialect,
