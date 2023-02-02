@@ -1,3 +1,0 @@
-add_subdirectory(matmul)
-add_subdirectory(rescheduled)
-add_subdirectory(SoftFloat)

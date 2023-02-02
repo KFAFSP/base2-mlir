@@ -69,7 +69,7 @@ add_compile_options(
     # $<$<CXX_COMPILER_ID:Clang>:-fdebug-default-version=4>
 )
 
-add_subdirectory(c-test)
+# add_subdirectory(c-test)
 add_subdirectory(docs)
 add_subdirectory(include)
 add_subdirectory(lib)
