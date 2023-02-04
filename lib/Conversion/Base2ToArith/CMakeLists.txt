@@ -9,9 +9,8 @@ add_mlir_conversion_library(Base2ToArith
 
     LINK_LIBS PUBLIC
         MLIRDialectUtils
+        MLIRArithDialect
         MLIRFuncDialect
-        MLIRLinalgDialect
-        MLIRLinalgTransforms
         MLIRTransformUtils
         Base2Dialect
 )
