@@ -28,6 +28,25 @@ def Base2_FixedAddOp
                     InferTypeOpInterface,
                     ["inferReturnTypes"]>]> {
     let summary = "Exact addition operation";
+    let description = [{
+        The `fixed.add` operation computes the sum of two FixedPointType numbers.
+        If the value is Signless, an error will be returned, because this is the
+        exact operation between numbers. The result type will be solved using
+        `inferReturnTypes` method.
+
+        Syntax:
+
+        ```
+        fixed-add-op ::= `fixed.add` $lhs, $rhs `:` type($lhs) `,` type($rhs)
+        ```
+
+        Example:
+
+        ```
+        %0 = base2.fixed.add %1, %2 : !base2.si4_4, !base2.ui4_4
+        return %0 : !base2.si6_4
+        ```
+    }];
 
     let assemblyFormat = [{
         $lhs `,` $rhs attr-dict `:` type($lhs) `,` type($rhs)
