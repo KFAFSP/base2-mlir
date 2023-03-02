@@ -8,7 +8,6 @@
 
 #include "base2-mlir/Dialect/Base2/IR/Attributes.h"
 #include "base2-mlir/Dialect/Base2/Interfaces/FixedPointSemantics.h"
-#include "base2-mlir/Dialect/Base2/Interfaces/IEEE754Semantics.h"
 #include "mlir/IR/Types.h"
 
 //===- Generated includes -------------------------------------------------===//

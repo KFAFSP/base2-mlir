@@ -3,7 +3,6 @@ add_mlir_library(Base2Interfaces
         BitSequenceAttr.cpp
         BitSequenceType.cpp
         FixedPointSemantics.cpp
-        IEEE754Semantics.cpp
         InterpretableType.cpp
         RoundingOp.cpp
 

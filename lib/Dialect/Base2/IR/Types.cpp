@@ -244,94 +244,6 @@ ValueFacts FixedPointType::getFacts(const BitSequence &value) const
 }
 
 //===----------------------------------------------------------------------===//
-// IEEE754Type
-//===----------------------------------------------------------------------===//
-
-LogicalResult IEEE754Type::verify(
-    function_ref<InFlightDiagnostic()> emitError,
-    bit_width_t precision,
-    bit_width_t exponentBits,
-    exponent_t bias)
-{
-    // Precision must be within limits.
-    if (precision < 2)
-        return emitError()
-               << "precision (" << precision << ") must be greater than 1";
-
-    // Exponent bits must be within limits.
-    if (exponentBits < 1 || exponentBits > max_exponent_bits)
-        return emitError()
-               << "exponent bits (" << exponentBits
-               << ") exceeds the limit ([1, " << max_exponent_bits << "])";
-
-    // Bias must be within limits.
-    if (base2::getBitWidth(bias) > exponentBits) {
-        const auto maxBias = (std::int64_t(1) << exponentBits) - 1;
-        return emitError()
-               << "bias (" << bias << ") exceeds limit (" << maxBias << ")";
-    }
-
-    // Total bit width must fit into a standard integer type.
-    const auto bitWidth = precision + exponentBits;
-    if (bitWidth > IntegerType::kMaxWidth)
-        return emitError()
-               << "total bits (" << bitWidth << ") exceed the limit ("
-               << IntegerType::kMaxWidth << ")";
-
-    return success();
-}
-
-void IEEE754Type::print(AsmPrinter &printer) const
-{
-    // `<`
-    printer << "<";
-
-    // $precision `,` $exponentBits
-    printer << getPrecision() << ", " << getExponentBits();
-    // (`,` $bias)?
-    if (getBias() != base2::getBias(getExponentBits()))
-        printer << ", " << getBias();
-
-    // `>`
-    printer << ">";
-}
-
-Type IEEE754Type::parse(AsmParser &parser)
-{
-    // `<`
-    if (parser.parseLess()) return Type{};
-
-    // $precision `,` $exponentBits
-    bit_width_t precision, exponentBits;
-    if (parser.parseInteger(precision) || parser.parseComma()
-        || parser.parseInteger(exponentBits))
-        return Type{};
-
-    // We must check this now to calculate the default bias, even though the
-    // verifier also checks this.
-    if (exponentBits < 1 || exponentBits > max_exponent_bits) {
-        parser.emitError(parser.getNameLoc())
-            << "exponent bits (" << exponentBits << ") exceeds the limit ([1, "
-            << max_exponent_bits << "])";
-        return Type{};
-    }
-
-    // (`,` $bias)?
-    auto bias = base2::getBias(exponentBits);
-    if (succeeded(parser.parseOptionalComma()))
-        if (parser.parseInteger(bias)) return Type{};
-
-    // `>`
-    if (parser.parseGreater()) return Type{};
-
-    return parser.getChecked<IEEE754Type>(
-        parser.getContext(),
-        precision,
-        exponentBits,
-        bias);
-}
-
-//===----------------------------------------------------------------------===//
 // Base2Dialect
 //===----------------------------------------------------------------------===//
 
@@ -348,10 +260,6 @@ void Base2Dialect::printType(Type type, DialectAsmPrinter &printer) const
     // Print keyword abbreviation.
     if (const auto fixed = type.dyn_cast<FixedPointSemantics>()) {
         fixed.print(printer.getStream());
-        return;
-    }
-    if (const auto ieee754 = type.dyn_cast<IEEE754Semantics>()) {
-        ieee754.print(printer.getStream());
         return;
     }
 
@@ -373,9 +281,6 @@ Type Base2Dialect::parseType(DialectAsmParser &parser) const
     if (const auto fixed =
             FixedPointSemantics::parse(parser.getContext(), typeTag))
         return fixed;
-    if (const auto ieee754 =
-            IEEE754Semantics::parse(parser.getContext(), typeTag))
-        return ieee754;
 
     parser.emitError(parser.getNameLoc(), "unknown base2 type: ") << typeTag;
     return {};

@@ -526,10 +526,4 @@ def Base2_ModOp
 
 include "base2-mlir/Dialect/Base2/IR/FixedOps.td"
 
-//===----------------------------------------------------------------------===//
-// Floating-point operations
-//===----------------------------------------------------------------------===//
-
-include "base2-mlir/Dialect/Base2/IR/FloatOps.td"
-
 #endif

@@ -2,7 +2,6 @@ mlir_gen_iface(Base2 ArithmeticOp op)
 mlir_gen_iface(Base2 BitSequenceAttr attr)
 mlir_gen_iface(Base2 BitSequenceType type)
 mlir_gen_iface(Base2 FixedPointSemantics type)
-mlir_gen_iface(Base2 IEEE754Semantics type)
 mlir_gen_iface(Base2 InterpretableType type)
 mlir_gen_iface(Base2 RoundingOp op)
 

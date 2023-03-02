@@ -62,6 +62,5 @@ void Base2Dialect::initialize()
     registerBitSequenceAttrModels(*getContext());
     registerBitSequenceTypeModels(*getContext());
     registerFixedPointSemanticsModels(*getContext());
-    registerIEEE754SemanticsModels(*getContext());
     registerInterpretableTypeModels(*getContext());
 }
