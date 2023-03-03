@@ -55,7 +55,6 @@ def Base2_ConstantOp : Base2_Op<
 
     let assemblyFormat = "attr-dict $value";
 
-    let hasFolder = 1;
     let hasCanonicalizer = 1;
 
     code extraClassDeclaration = [{
@@ -118,7 +117,6 @@ def Base2_BitCastOp : Base2_CastOpBase<
         ```
     }];
 
-    let hasFolder = 1;
     let hasCanonicalizer = 1;
 }
 
@@ -154,8 +152,6 @@ def ValueCastOp : Base2_CastOpBase<
     let assemblyFormat = [{
         $in attr-dict `:` type($in) `to` ($roundingMode^)? type($out)
     }];
-
-    let hasFolder = 1;
 }
 
 //===----------------------------------------------------------------------===//
@@ -202,8 +198,6 @@ def Base2_CmpOp : Base2_Op<
         $predicate $lhs `,` $rhs attr-dict `:` type($lhs)
     }];
 
-    let hasFolder = 1;
-
     code extraClassDeclaration = [{
     public:
         //===--------------------------------------------------------------===//
@@ -237,8 +231,6 @@ class Base2_MinMaxOpBase<string mnemonic, list<Trait> traits = []>
     let assemblyFormat = [{
         $lhs `,` $rhs attr-dict `:` type($lhs)
     }];
-
-    let hasFolder = 1;
 }
 
 def Base2_MinOp : Base2_MinMaxOpBase<"min"> {
@@ -332,8 +324,6 @@ class Base2_ClosedArithmeticOpBase<string mnemonic, list<Trait> traits = []>
     let assemblyFormat = [{
         $lhs `,` $rhs attr-dict `:` ($roundingMode^)? type($result)
     }];
-
-    let hasFolder = 1;
 }
 
 def Base2_AddOp : Base2_ClosedArithmeticOpBase<"add", [Commutative]> {
@@ -504,8 +494,6 @@ def Base2_ModOp
     let assemblyFormat = [{
         $lhs `,` $rhs attr-dict `:` type($result)
     }];
-
-    let hasFolder = 1;
 
     code extraClassDeclaration = [{
     public:
