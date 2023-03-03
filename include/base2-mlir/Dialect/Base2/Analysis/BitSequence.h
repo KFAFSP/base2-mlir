@@ -24,6 +24,9 @@ namespace mlir::base2 {
 /// Type that can hold the size of a bit sequence.
 using bit_width_t = unsigned int;
 
+/// Type that represents the exponent of a fixed-point number.
+using exponent_t = std::int32_t;
+
 //===----------------------------------------------------------------------===//
 // BitSequenceBase
 //===----------------------------------------------------------------------===//

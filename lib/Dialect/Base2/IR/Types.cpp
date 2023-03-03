@@ -36,15 +36,15 @@ using namespace mlir::base2;
 LogicalResult FixedPointType::verify(
     function_ref<InFlightDiagnostic()> emitError,
     IntegerType integerType,
-    bit_width_t fractionalBits)
+    exponent_t exponent)
 {
     if (!integerType) return emitError() << "expected IntegerType";
 
     // Fractional bits must fit into integer type.
-    if (fractionalBits > integerType.getWidth())
+    if (-exponent > static_cast<int>(integerType.getWidth()))
         return emitError()
-               << "number of fractional bits (" << fractionalBits
-               << ") exceeds bit width (" << integerType.getWidth() << ")";
+               << "number of exponent (" << exponent << ") exceeds bit width ("
+               << integerType.getWidth() << ")";
 
     return success();
 }
@@ -52,11 +52,9 @@ LogicalResult FixedPointType::verify(
 LogicalResult FixedPointType::verify(
     function_ref<InFlightDiagnostic()> emitError,
     Signedness,
-    bit_width_t integerBits,
-    bit_width_t fractionalBits)
+    bit_width_t bitWidth)
 {
     // Total bit width must fit into a standard integer type.
-    const auto bitWidth = integerBits + fractionalBits;
     if (bitWidth > IntegerType::kMaxWidth)
         return emitError()
                << "total bits (" << bitWidth << ") exceed the limit ("
@@ -78,9 +76,9 @@ void FixedPointType::print(AsmPrinter &printer) const
     }
 
     // $integerBits
-    printer << getIntegerBits();
+    printer << getBitWidth();
     // (`,` $fractionalBits)?
-    if (getFractionalBits() > 0) printer << ", " << getFractionalBits();
+    if (getExponent() != 0) printer << ", " << getExponent();
 
     // `>`
     printer << ">";
@@ -99,11 +97,12 @@ Type FixedPointType::parse(AsmParser &parser)
         signedness = Signedness::Unsigned;
 
     // $integerBits
-    unsigned integerBits, fractionalBits = 0;
-    if (parser.parseInteger(integerBits)) return Type{};
+    unsigned bitWidth = 0;
+    int exponent = 0;
+    if (parser.parseInteger(bitWidth)) return Type{};
     // (`,` $fractionalBits)?
     if (!parser.parseOptionalComma()) {
-        if (parser.parseInteger(fractionalBits)) return Type{};
+        if (parser.parseInteger(exponent)) return Type{};
     }
 
     // `>`
@@ -113,10 +112,9 @@ Type FixedPointType::parse(AsmParser &parser)
     const auto emitError = [&]() {
         return parser.emitError(parser.getNameLoc());
     };
-    if (failed(verify(emitError, signedness, integerBits, fractionalBits)))
-        return Type{};
+    if (failed(verify(emitError, signedness, bitWidth))) return Type{};
 
-    return get(parser.getContext(), signedness, integerBits, fractionalBits);
+    return get(parser.getContext(), signedness, bitWidth, exponent);
 }
 
 [[nodiscard]] static bit_result valueCastTo(

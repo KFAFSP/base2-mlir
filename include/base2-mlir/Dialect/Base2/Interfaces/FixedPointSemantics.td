@@ -25,9 +25,9 @@ def Base2_FixedPointSemantics : TypeInterface<"FixedPointSemantics"> {
             /*methodBody=*/"",
             /*defaultImplementation=*/"">,
         InterfaceMethod<
-            /*desc=*/"Gets the number of fractional bits.",
-            /*retTy=*/"bit_width_t",
-            /*methodName=*/"getFractionalBits",
+            /*desc=*/"Gets the exponent number.",
+            /*retTy=*/"exponent_t",
+            /*methodName=*/"getExponent",
             /*args=*/(ins),
             /*methodBody=*/"",
             /*defaultImplementation=*/"return 0;">];
@@ -55,13 +55,14 @@ def Base2_FixedPointSemantics : TypeInterface<"FixedPointSemantics"> {
         {
             return $_type.getSignedness() == Signedness::Unsigned;
         }
-
-        /// Gets the total number of bits.
         [[nodiscard]] bit_width_t getBitWidth() const
         {
             return $_type.getIntegerType().getWidth();
         }
-        /// Gets the number of integer bits.
+        [[nodiscard]] exponent_t getFractionalBits() const
+        {
+            return -$_type.getExponent();
+        }
         [[nodiscard]] bit_width_t getIntegerBits() const
         {
             return $_type.getBitWidth() - $_type.getFractionalBits();
@@ -90,16 +91,17 @@ def Base2_FixedPointSemantics : TypeInterface<"FixedPointSemantics"> {
         {
             return getSignedness() == Signedness::Unsigned;
         }
-
-        /// Gets the total number of bits.
         [[nodiscard]] bit_width_t getBitWidth() const
         {
             return getIntegerType().getWidth();
         }
-        /// Gets the number of integer bits.
+        [[nodiscard]] exponent_t getFractionalBits() const
+        {
+            return -getExponent();
+        }
         [[nodiscard]] bit_width_t getIntegerBits() const
         {
-            return getBitWidth() - getFractionalBits();
+            return getBitWidth()-getFractionalBits();
         }
 
         //===--------------------------------------------------------------===//
@@ -146,7 +148,7 @@ def Base2_FixedPointSemantics : TypeInterface<"FixedPointSemantics"> {
         /// Gets the canonical built-in type with the same semantics, if any.
         [[nodiscard]] IntegerType getBuiltinType() const
         {
-            if (getFractionalBits()) return IntegerType{};
+            if (getExponent()) return IntegerType{};
             return getIntegerType();
         }
 
@@ -157,26 +159,26 @@ def Base2_FixedPointSemantics : TypeInterface<"FixedPointSemantics"> {
         /// Builds a canonical FixedPointSemantics type.
         ///
         /// @pre    `integerType`
-        /// @pre    `fractionalBits <= integerType.getWidth()`
+        /// @pre    `-exponent <= integerType.getWidth()`
         [[nodiscard]] static FixedPointSemantics get(
             IntegerType integerType,
-            bit_width_t fractionalBits = 0);
+            exponent_t exponent = 0);
         /// Builds a canonical FixedPointSemantics type.
         ///
         /// @pre    `ctx`
-        /// @pre    `integerBits + fractionalBits <= IntegerType::kMaxWidth`
+        /// @pre    `bitWidth <= IntegerType::kMaxWidth`
         [[nodiscard]] static FixedPointSemantics get(
             MLIRContext *ctx,
             Signedness signedness,
-            bit_width_t integerBits,
-            bit_width_t fractionalBits = 0)
+            bit_width_t bitWidth,
+            exponent_t exponent = 0)
         {
             return get(
                 IntegerType::get(
                     ctx,
-                    integerBits + fractionalBits,
+                    bitWidth,
                     getBuiltinSignedness(signedness)),
-                fractionalBits);
+                -exponent);
         }
 
         //===--------------------------------------------------------------===//
@@ -212,7 +214,7 @@ def Base2_FixedPointSemantics : TypeInterface<"FixedPointSemantics"> {
             assert(rhs);
 
             return getIntegerType() == rhs.getIntegerType()
-                && getFractionalBits() == rhs.getFractionalBits();
+                && getExponent() == rhs.getExponent();
         }
 
         /// Determines whether @p rhs is a subset of this.

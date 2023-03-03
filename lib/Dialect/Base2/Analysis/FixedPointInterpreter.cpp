@@ -92,8 +92,8 @@ FixedPointInterpreter::auto_result FixedPointInterpreter::rescale(
     const auto resultSema = FixedPointSemantics::get(
         sema.getContext(),
         sema.getSignedness(),
-        sema.getIntegerBits(),
-        outFracBits);
+        sema.getBitWidth(),
+        -outFracBits);
 
     // Handle extension case.
     if (relativeScale > 0) {
@@ -147,8 +147,8 @@ bit_result FixedPointInterpreter::valueCast(
         from = FixedPointSemantics::get(
             from.getContext(),
             from.getSignedness(),
-            to.getIntegerBits(),
-            from.getFractionalBits());
+            to.getBitWidth(),
+            -from.getFractionalBits());
     }
 
     // Rescale to match the result scale.
@@ -180,21 +180,20 @@ align(FixedPointSemantics lhs, FixedPointSemantics rhs)
     assert(lhs && rhs);
 
     // Take the maximum of all widths.
-    auto outIntBits = std::max(lhs.getIntegerBits(), rhs.getIntegerBits());
-    const auto outFracBits =
-        std::max(lhs.getFractionalBits(), rhs.getFractionalBits());
+    auto outBits = std::max(lhs.getBitWidth(), rhs.getBitWidth());
+    const auto outExponent = std::min(lhs.getExponent(), rhs.getExponent());
 
     // Unify signedness.
     const auto signedness = super(lhs.getSignedness(), rhs.getSignedness());
     if (signedness == Signedness::Signed) {
         // When converting unsigned to signed, an additional bit is needed.
         if (lhs.isUnsigned())
-            outIntBits = std::max(outIntBits, lhs.getIntegerBits() + 1);
+            outBits = std::max(outBits, lhs.getBitWidth() + 1);
         else if (rhs.isUnsigned())
-            outIntBits = std::max(outIntBits, rhs.getIntegerBits() + 1);
+            outBits = std::max(outBits, rhs.getBitWidth() + 1);
     }
 
-    return {signedness, outIntBits, outFracBits};
+    return {signedness, outBits, outExponent};
 }
 
 /// Extends @p in to @p outBits .
@@ -315,17 +314,17 @@ FixedPointSemantics
 FixedPointInterpreter::add(FixedPointSemantics lhs, FixedPointSemantics rhs)
 {
     // Start from aligned semantics.
-    auto [signedness, outIntBits, outFracBits] = ::align(lhs, rhs);
+    auto [signedness, outBits, outExponent] = ::align(lhs, rhs);
     if (signedness == Signedness::Signless) return FixedPointSemantics{};
 
     // Addition can produce 1 additional bit at maximum.
-    ++outIntBits;
+    ++outBits;
 
     return FixedPointSemantics::get(
         lhs.getContext(),
         signedness,
-        outIntBits,
-        outFracBits);
+        outBits,
+        outExponent);
 }
 
 FixedPointInterpreter::auto_result FixedPointInterpreter::add(

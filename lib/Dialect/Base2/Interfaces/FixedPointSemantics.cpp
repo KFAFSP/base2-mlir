@@ -21,12 +21,12 @@ using namespace mlir::base2;
 //===----------------------------------------------------------------------===//
 
 FixedPointSemantics
-FixedPointSemantics::get(IntegerType integerType, bit_width_t fractionalBits)
+FixedPointSemantics::get(IntegerType integerType, exponent_t exponent)
 {
     // NOTE: This is of debatable use and unexpected.
     // if (fractionalBits == 0) return integerType.cast<FixedPointSemantics>();
 
-    return FixedPointType::get(integerType, fractionalBits);
+    return FixedPointType::get(integerType, exponent);
 }
 
 FixedPointSemantics FixedPointSemantics::parse(MLIRContext* ctx, StringRef str)
@@ -45,19 +45,23 @@ FixedPointSemantics FixedPointSemantics::parse(MLIRContext* ctx, StringRef str)
         return FixedPointSemantics{};
 
     // [0-9]+
-    bit_width_t integerBits, fractionalBits = 0;
-    if (str.consumeInteger(10, integerBits)) return FixedPointSemantics{};
+    bit_width_t bitWidth = 0;
+    exponent_t exponent = 0;
+    if (str.consumeInteger(10, bitWidth)) return FixedPointSemantics{};
 
+    bool isNegative = true;
     // (`_` [0-9]+)?
     if (str.consume_front("_")) {
         // Parse the fractional bit width.
-        if (str.consumeInteger(10, fractionalBits))
-            return FixedPointSemantics{};
+        if (str.consume_front("m")) isNegative = false;
+        if (str.consumeInteger(10, exponent)) return FixedPointSemantics{};
     }
 
     if (!str.empty()) return FixedPointSemantics{};
 
-    return get(ctx, signedness, integerBits, fractionalBits);
+    if (isNegative) exponent = 0 - exponent;
+
+    return get(ctx, signedness, bitWidth, exponent);
 }
 
 void FixedPointSemantics::print(llvm::raw_ostream &out) const
@@ -71,11 +75,15 @@ void FixedPointSemantics::print(llvm::raw_ostream &out) const
     out << "i";
 
     // [0-9]+
-    out << getIntegerBits();
+    out << getBitWidth();
 
     // (`_` [0-9]+)?
-    if (const auto fractionalBits = getFractionalBits())
-        out << "_" << fractionalBits;
+    if (const auto exponent = getExponent()) {
+        if (exponent > 0)
+            out << "_m" << exponent;
+        else if (exponent < 0)
+            out << "_" << -exponent;
+    }
 }
 
 bool FixedPointSemantics::isSupersetOf(FixedPointSemantics rhs) const

@@ -41,8 +41,8 @@ def Base2_FixedPointType : Base2_Type<
         Syntax:
 
         ```
-        fixed-type ::= `fixed` `<` (signedness)? $integerBits
-                                   (`,` $fractionalBits)? `>`
+        fixed-type ::= `fixed` `<` (signedness)? $bitWidth
+                                   (`,` $exponent)? `>`
         signedness ::= `signed` | `unsigned`
         ```
 
@@ -50,43 +50,44 @@ def Base2_FixedPointType : Base2_Type<
         integer type literals:
 
         ```
-        fixed-sema      ::= (signedness-spec)? `i` [0-9]+ (`_` [0-9]+)?
+        fixed-sema      ::= (signedness-spec)? `i` [0-9]+ (`_` (m)?[0-9]+)?
         signedness-spec ::= `s` | `u`
         ```
 
         Example:
 
         ```
-        !base2.fixed_point<11,3>         = !base2.fixed_point<signless 11,3>
-                                         = !base2.i11_3
-        !base2.fixed_point<signed 12>    = !base2.si12
-        !base2.fixed_point<unsigned 0,4> = !base2.ui0_4
+        !base2.fixed_point<11,3>           = !base2.fixed_point<signless 11,3>
+                                           = !base2.i11_m3
+        !base2.fixed_point<unsigned 8,-5>  = !base2.fixed_point<unsigned 8,-5>
+                                           = !base2.ui8_5
+        !base2.fixed_point<signed 12>      = !base2.si12
         ```
     }];
 
     let parameters = (ins
         "IntegerType":$integerType,
-        "bit_width_t":$fractionalBits);
+        "exponent_t":$exponent);
 
     let builders = [
         TypeBuilderWithInferredContext<(ins
             "IntegerType":$integerType,
-            CArg<"bit_width_t", "0">:$fractionalBits),
+            CArg<"exponent_t", "0">:$exponent),
         [{
-            return $_get(integerType.getContext(), integerType, fractionalBits);
+            return $_get(integerType.getContext(), integerType, exponent);
         }]>,
         TypeBuilder<(ins
                 "Signedness":$signedness,
-                "bit_width_t":$integerBits,
-                CArg<"bit_width_t", "0">:$fractionalBits),
+                "bit_width_t":$bitWidth,
+                CArg<"exponent_t", "0">:$exponent),
         [{
             return $_get(
                 $_ctxt,
                 IntegerType::get(
                     $_ctxt,
-                    integerBits + fractionalBits,
+                    bitWidth,
                     getBuiltinSignedness(signedness)),
-                fractionalBits);
+                exponent);
         }]>];
     let skipDefaultBuilders = 1;
 
@@ -100,17 +101,7 @@ def Base2_FixedPointType : Base2_Type<
         static LogicalResult verify(
             function_ref<InFlightDiagnostic()> emitError,
             Signedness signedness,
-            bit_width_t integerBits,
-            bit_width_t fractionalBits);
-
-        //===--------------------------------------------------------------===//
-        // BitSequenceType
-        //===--------------------------------------------------------------===//
-
-        [[nodiscard]] bit_width_t getBitWidth() const
-        {
-            return getIntegerType().getWidth();
-        }
+            bit_width_t integerBits);
     }];
 }
 
