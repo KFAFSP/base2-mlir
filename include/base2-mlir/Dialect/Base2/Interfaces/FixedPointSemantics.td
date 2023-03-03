@@ -59,13 +59,15 @@ def Base2_FixedPointSemantics : TypeInterface<"FixedPointSemantics"> {
         {
             return $_type.getIntegerType().getWidth();
         }
-        [[nodiscard]] exponent_t getFractionalBits() const
+        [[nodiscard]] bit_width_t getFractionalBits() const
         {
+            if ($_type.getExponent() >= 0) return 0;
             return -$_type.getExponent();
         }
         [[nodiscard]] bit_width_t getIntegerBits() const
         {
-            return $_type.getBitWidth() - $_type.getFractionalBits();
+            if ($_type.getExponent() >= 0) return $_type.getBitWidth()+$_type.getExponent();
+            else return $_type.getBitWidth()-$_type.getFractionalBits();
         }
     }];
 
@@ -95,13 +97,15 @@ def Base2_FixedPointSemantics : TypeInterface<"FixedPointSemantics"> {
         {
             return getIntegerType().getWidth();
         }
-        [[nodiscard]] exponent_t getFractionalBits() const
+        [[nodiscard]] bit_width_t getFractionalBits() const
         {
+            if (getExponent() >= 0) return 0;
             return -getExponent();
         }
         [[nodiscard]] bit_width_t getIntegerBits() const
         {
-            return getBitWidth()-getFractionalBits();
+            if (getExponent() >= 0) return getBitWidth()+getExponent();
+            else return getBitWidth()-getFractionalBits();
         }
 
         //===--------------------------------------------------------------===//
@@ -178,7 +182,7 @@ def Base2_FixedPointSemantics : TypeInterface<"FixedPointSemantics"> {
                     ctx,
                     bitWidth,
                     getBuiltinSignedness(signedness)),
-                -exponent);
+                exponent);
         }
 
         //===--------------------------------------------------------------===//

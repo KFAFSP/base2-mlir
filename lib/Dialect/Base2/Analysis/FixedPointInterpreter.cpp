@@ -180,18 +180,22 @@ align(FixedPointSemantics lhs, FixedPointSemantics rhs)
     assert(lhs && rhs);
 
     // Take the maximum of all widths.
-    auto outBits = std::max(lhs.getBitWidth(), rhs.getBitWidth());
-    const auto outExponent = std::min(lhs.getExponent(), rhs.getExponent());
+    auto outIntBits = std::max(lhs.getIntegerBits(), rhs.getIntegerBits());
+    const auto outFracBits =
+        std::max(lhs.getFractionalBits(), rhs.getFractionalBits());
 
     // Unify signedness.
     const auto signedness = super(lhs.getSignedness(), rhs.getSignedness());
     if (signedness == Signedness::Signed) {
         // When converting unsigned to signed, an additional bit is needed.
         if (lhs.isUnsigned())
-            outBits = std::max(outBits, lhs.getBitWidth() + 1);
+            outIntBits = std::max(outIntBits, lhs.getIntegerBits() + 1);
         else if (rhs.isUnsigned())
-            outBits = std::max(outBits, rhs.getBitWidth() + 1);
+            outIntBits = std::max(outIntBits, rhs.getIntegerBits() + 1);
     }
+
+    auto outBits = outIntBits + outFracBits;
+    auto outExponent = static_cast<int>(-outFracBits);
 
     return {signedness, outBits, outExponent};
 }
@@ -213,9 +217,9 @@ extend(bool isSigned, const llvm::APInt &in, bit_width_t outBits)
 /// @pre    no overflow will occur
 static llvm::APInt alignFractionalExact(
     bool isSigned,
-    bit_width_t inFractionalBits,
+    exponent_t inFractionalBits,
     const llvm::APInt in,
-    bit_width_t outFractionalBits)
+    exponent_t outFractionalBits)
 {
     assert(inFractionalBits <= outFractionalBits);
 

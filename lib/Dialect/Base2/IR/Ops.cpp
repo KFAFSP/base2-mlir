@@ -184,9 +184,7 @@ template<class Fn>
     const auto outSema = fn(lhsSema, rhsSema);
     resultTypes.push_back(getSameShape(
         lhsTy,
-        FixedPointType::get(
-            outSema.getIntegerType(),
-            outSema.getFractionalBits())));
+        FixedPointType::get(outSema.getIntegerType(), outSema.getExponent())));
     return success();
 }
 
