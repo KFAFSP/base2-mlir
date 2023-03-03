@@ -3,6 +3,7 @@
 /// @file
 /// @author     Karl F. A. Friebel (karl.friebel@tu-dresden.de)
 
+#include "base2-mlir/Conversion/Passes.h"
 #include "base2-mlir/Dialect/Base2/IR/Base2.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/MLIRContext.h"
@@ -20,6 +21,7 @@ int main(int argc, char* argv[])
     registry.insert<base2::Base2Dialect>();
 
     registerAllPasses();
+    registerBase2ConversionPasses();
 
     return asMainReturnCode(
         MlirOptMain(argc, argv, "base2-mlir optimizer driver\n", registry));
