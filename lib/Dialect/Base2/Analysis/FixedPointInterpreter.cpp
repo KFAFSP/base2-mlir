@@ -75,7 +75,7 @@ FixedPointInterpreter::auto_result FixedPointInterpreter::rescale(
     RoundingMode roundingMode)
 {
     assert(sema);
-    assert(value.size() == sema.getBitWidth());
+    // assert(value.size() == sema.getBitWidth());
     if (sema.isSignless()) return std::nullopt;
 
     // Initialize the result value.
@@ -93,7 +93,7 @@ FixedPointInterpreter::auto_result FixedPointInterpreter::rescale(
         sema.getContext(),
         sema.getSignedness(),
         sema.getBitWidth(),
-        -outFracBits);
+        sema.getExponent());
 
     // Handle extension case.
     if (relativeScale > 0) {
@@ -217,9 +217,9 @@ extend(bool isSigned, const llvm::APInt &in, bit_width_t outBits)
 /// @pre    no overflow will occur
 static llvm::APInt alignFractionalExact(
     bool isSigned,
-    exponent_t inFractionalBits,
+    bit_width_t inFractionalBits,
     const llvm::APInt in,
-    exponent_t outFractionalBits)
+    bit_width_t outFractionalBits)
 {
     assert(inFractionalBits <= outFractionalBits);
 

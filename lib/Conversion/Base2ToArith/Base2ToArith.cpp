@@ -20,28 +20,15 @@ using namespace mlir::base2;
 
 namespace {
 
-/// Determines whether @p entity is signed.
 [[nodiscard]] static bool isSigned(auto entity)
 {
     return entity.getSignedness() == Signedness::Signed;
 }
 
-[[nodiscard]] static bit_width_t toLeastBits(auto bits)
-{
-    if (bits > 0 && bits <= 8) return 8;
-    if (bits > 8 && bits <= 16) return 16;
-    if (bits > 16 && bits <= 32) return 32;
-    if (bits > 32 && bits <= 64)
-        return 64;
-    else
-        return 64;
-}
-
-struct ConvertBitCast final : public OpConversionPattern<BitCastOp> {
-public:
+struct ConvertBitcast : OpConversionPattern<BitCastOp> {
     using OpConversionPattern<BitCastOp>::OpConversionPattern;
 
-    ConvertBitCast(
+    ConvertBitcast(
         TypeConverter &typeConverter,
         MLIRContext* context,
         PatternBenefit benefit)
@@ -55,15 +42,12 @@ public:
         assert(adaptor.getOperands().size() == 1);
 
         if (!getElementTypeOrSelf(adaptor.getIn().getType())
-                 .isSignlessIntOrFloat())
-            return rewriter.notifyMatchFailure(
-                op,
-                "expected signless int or float input");
+                 .isSignlessInteger())
+            return rewriter.notifyMatchFailure(op, "expected signless integer");
+
         const auto resultTy = typeConverter->convertType(op.getType());
-        if (!getElementTypeOrSelf(resultTy).isSignlessIntOrFloat())
-            return rewriter.notifyMatchFailure(
-                op,
-                "expected signless int or float input");
+        if (!getElementTypeOrSelf(resultTy).isSignlessInteger())
+            return rewriter.notifyMatchFailure(op, "epected signless integer");
 
         rewriter.replaceOpWithNewOp<arith::BitcastOp>(
             op,
@@ -75,25 +59,32 @@ public:
 };
 
 struct ConvertExtOrTrunc : OpConversionPattern<ValueCastOp> {
-    using OpConversionPattern::OpConversionPattern;
+    using OpConversionPattern<ValueCastOp>::OpConversionPattern;
 
-    virtual LogicalResult matchAndRewrite(
+    ConvertExtOrTrunc(
+        TypeConverter &typeConverter,
+        MLIRContext* context,
+        PatternBenefit benefit)
+            : OpConversionPattern<ValueCastOp>(
+                typeConverter,
+                context,
+                benefit){};
+
+    LogicalResult matchAndRewrite(
         ValueCastOp op,
-        typename ValueCastOp::Adaptor adaptor,
+        ValueCastOpAdaptor adaptor,
         ConversionPatternRewriter &rewriter) const override
     {
-        // Only applies to known-exact operations.
+        /// Test with no rounding first
+        /// TODO: Rounding using elaborator
         if (op.getRoundingMode() != RoundingMode::None)
             return rewriter.notifyMatchFailure(op, [&](auto &diag) {
                 diag << "unsupported rounding mode `"
                      << stringifyRoundingMode(op.getRoundingMode()) << "`";
             });
 
-        // Only applies to signless integer or float input and output.
         if (!adaptor.getIn().getType().isSignlessIntOrFloat())
-            return rewriter.notifyMatchFailure(
-                op,
-                "expected signless int or float input");
+            return rewriter.notifyMatchFailure(op, "expected signless integer");
         const auto resultTy = typeConverter->convertType(op.getType());
         if (!resultTy.isSignlessIntOrFloat())
             return rewriter.notifyMatchFailure(
@@ -103,11 +94,9 @@ struct ConvertExtOrTrunc : OpConversionPattern<ValueCastOp> {
             != resultTy.isa<IntegerType>())
             return rewriter.notifyMatchFailure(op, "expected matching types");
 
-        // Determine the bit-widths.
         const auto inBits = adaptor.getIn().getType().getIntOrFloatBitWidth();
         const auto outBits = resultTy.getIntOrFloatBitWidth();
 
-        // Handle truncation.
         if (inBits > outBits) {
             if (adaptor.getIn().getType().isa<FloatType>()) {
                 rewriter.replaceOpWithNewOp<arith::TruncFOp>(
@@ -126,14 +115,6 @@ struct ConvertExtOrTrunc : OpConversionPattern<ValueCastOp> {
 
         // Handle extension.
         if (inBits < outBits) {
-            if (adaptor.getIn().getType().isa<FloatType>()) {
-                rewriter.replaceOpWithNewOp<arith::ExtFOp>(
-                    op,
-                    resultTy,
-                    adaptor.getIn());
-                return success();
-            }
-
             // Handle signed.
             if (isSigned(
                     op.getIn().getType().dyn_cast<FixedPointSemantics>())) {
@@ -154,199 +135,45 @@ struct ConvertExtOrTrunc : OpConversionPattern<ValueCastOp> {
 
         // Turns out this is just a bitcast.
         rewriter.replaceOp(op, adaptor.getIn());
+
         return success();
     }
 };
 
-struct ConvertIntToFPCast : OpConversionPattern<ValueCastOp> {
-    using OpConversionPattern::OpConversionPattern;
+struct ConvertFixedAddOp : OpConversionPattern<FixedAddOp> {
+    using OpConversionPattern<FixedAddOp>::OpConversionPattern;
 
-    virtual LogicalResult matchAndRewrite(
-        ValueCastOp op,
-        typename ValueCastOp::Adaptor adaptor,
+    ConvertFixedAddOp(
+        TypeConverter &typeConverter,
+        MLIRContext* context,
+        PatternBenefit benefit)
+            : OpConversionPattern<FixedAddOp>(
+                typeConverter,
+                context,
+                benefit){};
+
+    LogicalResult matchAndRewrite(
+        FixedAddOp op,
+        FixedAddOpAdaptor adaptor,
         ConversionPatternRewriter &rewriter) const override
     {
-        // Only applies to known-exact operations.
-        if (op.getRoundingMode() != RoundingMode::None)
-            return rewriter.notifyMatchFailure(op, [&](auto &diag) {
-                diag << "unsupported rounding mode `"
-                     << stringifyRoundingMode(op.getRoundingMode()) << "`";
-            });
+        assert(adaptor.getOperands().size() == 2);
 
-        // Only applies to signless integer input and float output.
-        if (!adaptor.getIn().getType().isSignlessInteger())
-            return rewriter.notifyMatchFailure(
-                op,
-                "expected signless int input");
+        const auto lhsTy = adaptor.getLhs().getType();
+        const auto rhsTy = adaptor.getRhs().getType();
+        assert(lhsTy.isSignlessInteger() && rhsTy.isSignlessInteger());
         const auto resultTy = typeConverter->convertType(op.getType());
-        if (!resultTy.isa<FloatType>())
-            return rewriter.notifyMatchFailure(op, "expected float output");
 
-        // Handle signed.
-        if (isSigned(op.getIn().getType().dyn_cast<FixedPointSemantics>())) {
-            rewriter.replaceOpWithNewOp<arith::SIToFPOp>(
-                op,
-                resultTy,
-                adaptor.getIn());
-            return success();
-        }
+        Value newLhs =
+            rewriter.create<ValueCastOp>(op.getLoc(), resultTy, op.getLhs());
+        Value newRhs =
+            rewriter.create<ValueCastOp>(op.getLoc(), resultTy, op.getRhs());
 
-        // Handle unsigned.
-        rewriter.replaceOpWithNewOp<arith::UIToFPOp>(
-            op,
-            resultTy,
-            adaptor.getIn());
+        rewriter.replaceOpWithNewOp<arith::AddIOp>(op, newLhs, newRhs);
+
         return success();
     }
 };
-
-struct ConvertFPToIntCast : OpConversionPattern<ValueCastOp> {
-    using OpConversionPattern::OpConversionPattern;
-
-    virtual LogicalResult matchAndRewrite(
-        ValueCastOp op,
-        typename ValueCastOp::Adaptor adaptor,
-        ConversionPatternRewriter &rewriter) const override
-    {
-        // Only applies to known-exact operations.
-        if (op.getRoundingMode() != RoundingMode::None)
-            return rewriter.notifyMatchFailure(op, [&](auto &diag) {
-                diag << "unsupported rounding mode `"
-                     << stringifyRoundingMode(op.getRoundingMode()) << "`";
-            });
-
-        // Only applies to float input and signless integer output.
-        if (!adaptor.getIn().getType().isa<FloatType>())
-            return rewriter.notifyMatchFailure(op, "expected float input");
-        const auto resultTy = typeConverter->convertType(op.getType());
-        if (!resultTy.isSignlessInteger())
-            return rewriter.notifyMatchFailure(
-                op,
-                "expected signless int output");
-
-        // Handle signed.
-        if (isSigned(op.getType().dyn_cast<FixedPointSemantics>())) {
-            rewriter.replaceOpWithNewOp<arith::FPToSIOp>(
-                op,
-                resultTy,
-                adaptor.getIn());
-            return success();
-        }
-
-        // Handle unsigned.
-        rewriter.replaceOpWithNewOp<arith::FPToUIOp>(
-            op,
-            resultTy,
-            adaptor.getIn());
-        return success();
-    }
-};
-
-template<class From, class FP, class SI, class UI = SI>
-struct ConvertExactBinOp : OpConversionPattern<From> {
-    using OpConversionPattern<From>::OpConversionPattern;
-
-    virtual LogicalResult matchAndRewrite(
-        From op,
-        typename From::Adaptor adaptor,
-        ConversionPatternRewriter &rewriter) const override
-    {
-        if (op.getRoundingMode() != RoundingMode::None)
-            return rewriter.notifyMatchFailure(op, [&](auto &diag) {
-                diag << "unsupported rounding mode `"
-                     << stringifyRoundingMode(op.getRoundingMode()) << "`";
-            });
-
-        if (adaptor.getLhs().getType().template isa<IntegerType>())
-            return convertInt(op, adaptor, rewriter);
-        if (adaptor.getLhs().getType().template isa<FloatType>())
-            return convertFloat(op, adaptor, rewriter);
-
-        return rewriter.notifyMatchFailure(
-            op,
-            "expected signless int or float");
-    }
-
-    LogicalResult convertInt(
-        From op,
-        typename From::Adaptor adaptor,
-        ConversionPatternRewriter &rewriter) const
-    {
-        auto signedness = op.getLhs()
-                              .getType()
-                              .template dyn_cast<FixedPointSemantics>()
-                              .getSignedness();
-        if constexpr (std::is_same_v<SI, UI>) {
-            // Ignore signedness if it doesn't matter so that we can
-            // transparently access the sign-agnostic arith operations.
-            if (signedness == Signedness::Signless)
-                signedness = Signedness::Unsigned;
-        }
-
-        const auto inBits = adaptor.getLhs().getType().getIntOrFloatBitWidth();
-        auto resultType = IntegerType::get(rewriter.getContext(), inBits);
-        const auto upBits = toLeastBits(inBits);
-        Value newLhs, newRhs;
-        if (inBits != upBits) {
-            newLhs = rewriter.create<ValueCastOp>(
-                op.getLoc(),
-                IntegerType::get(rewriter.getContext(), upBits),
-                adaptor.getLhs());
-            newRhs = rewriter.create<ValueCastOp>(
-                op.getLoc(),
-                IntegerType::get(rewriter.getContext(), upBits),
-                adaptor.getRhs());
-        }
-
-        switch (signedness) {
-        case Signedness::Unsigned:
-            if (inBits != upBits) {
-                auto result = rewriter.create<UI>(op.getLoc(), newLhs, newRhs);
-                rewriter.replaceOpWithNewOp<ValueCastOp>(
-                    op,
-                    resultType,
-                    result);
-            } else {
-                rewriter.replaceOpWithNewOp<UI>(
-                    op,
-                    adaptor.getLhs(),
-                    adaptor.getRhs());
-            }
-            break;
-        case Signedness::Signed:
-            if (inBits != upBits) {
-                auto result = rewriter.create<SI>(op.getLoc(), newLhs, newRhs);
-                rewriter.replaceOpWithNewOp<ValueCastOp>(
-                    op,
-                    resultType,
-                    result);
-            } else {
-                rewriter.replaceOpWithNewOp<SI>(
-                    op,
-                    adaptor.getLhs(),
-                    adaptor.getRhs());
-            }
-            break;
-        case Signedness::Signless:
-            return rewriter.notifyMatchFailure(op, "undefined semantics");
-        }
-
-        return success();
-    }
-
-    LogicalResult convertFloat(
-        From op,
-        typename From::Adaptor adaptor,
-        ConversionPatternRewriter &rewriter) const
-    {
-        rewriter.replaceOpWithNewOp<FP>(op, adaptor.getLhs(), adaptor.getRhs());
-        return success();
-    }
-};
-
-using ConvertExactAdd = ConvertExactBinOp<AddOp, arith::AddFOp, arith::AddIOp>;
-using ConvertExactSub = ConvertExactBinOp<SubOp, arith::SubFOp, arith::SubIOp>;
-using ConvertExactMul = ConvertExactBinOp<MulOp, arith::MulFOp, arith::MulIOp>;
 
 } // namespace
 
@@ -355,14 +182,10 @@ void mlir::populateBase2ToArithConversionPatterns(
     RewritePatternSet &patterns,
     PatternBenefit benefit)
 {
-    patterns.add<
-        ConvertBitCast,
-        ConvertExtOrTrunc,
-        ConvertIntToFPCast,
-        ConvertFPToIntCast,
-        ConvertExactAdd,
-        ConvertExactSub,
-        ConvertExactMul>(typeConverter, patterns.getContext(), benefit);
+    patterns.add<ConvertBitcast, ConvertExtOrTrunc, ConvertFixedAddOp>(
+        typeConverter,
+        patterns.getContext(),
+        benefit);
 }
 
 namespace {
@@ -381,7 +204,7 @@ void ConvertBase2ToArithPass::runOnOperation()
     // Convert integer fixed-point types to signless built-in integers.
     converter.addConversion([](FixedPointLikeType type) -> Type {
         const auto sema = type.getSemantics();
-        if (!sema.getFractionalBits()) return type;
+        if (!sema.getExponent()) return type;
 
         return IntegerType::get(sema.getContext(), sema.getBitWidth());
     });
@@ -436,9 +259,6 @@ void ConvertBase2ToArithPass::runOnOperation()
     // Convert base2 dialect operations
     populateBase2ToArithConversionPatterns(converter, patterns, 1);
 
-    // target.addDynamicallyLegalDialect<Base2Dialect>([&](Operation* op) {
-    //     return converter.isSignatureLegal(getOpFunctionType(op));
-    // });
     target.addIllegalDialect<Base2Dialect>();
     target.addLegalDialect<BuiltinDialect, arith::ArithDialect>();
 
