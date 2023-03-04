@@ -295,11 +295,14 @@ FixedPointInterpreter::promote(FixedPointSemantics lhs, FixedPointSemantics rhs)
     const auto [signedness, outIntBits, outFracBits] = ::align(lhs, rhs);
     if (signedness == Signedness::Signless) return FixedPointSemantics{};
 
+    auto outBits = outIntBits + outFracBits;
+    auto outExponent = static_cast<exponent_t>(-outFracBits);
+
     return FixedPointSemantics::get(
         lhs.getContext(),
         signedness,
-        outIntBits,
-        outFracBits);
+        outBits,
+        outExponent);
 }
 
 FixedPointInterpreter::align_result FixedPointInterpreter::promote(
