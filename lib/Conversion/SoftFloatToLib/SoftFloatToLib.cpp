@@ -123,7 +123,6 @@ public:
         SymbolTableCollection symbolTable; // new SymbolTable for this operation
 
         auto type = op.getResult().getType();
-        auto dstType = converter->convertType(type);
         if (!type.template isa<softfloat::SFloatType>()) return failure();
 
         Type i1Ty = IntegerType::get(rewriter.getContext(), 1);
@@ -162,7 +161,7 @@ public:
 
         rewriter.replaceOpWithNewOp<softfloat::CastOp>(
             op,
-            dstType,
+            type,
             in_bitcast,
             in_expBits,
             in_fracBits,
