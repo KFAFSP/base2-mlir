@@ -1,11 +1,11 @@
 // RUN: base2-opt %s --canonicalize | FileCheck %s
 
 //===----------------------------------------------------------------------===//
-// value_cast
+// cast
 //===----------------------------------------------------------------------===//
 
-// CHECK-LABEL: func.func @value_cast_ui_si_of(
-func.func @value_cast_ui_si_of() -> (si8, si8, si8, si8, si8) {
+// CHECK-LABEL: func.func @cast_ui_si_of(
+func.func @cast_ui_si_of() -> (si8, si8, si8, si8, si8) {
     // CHECK-DAG: %[[MOD:.+]] = bit.constant -16 : si8
     // CHECK-DAG: %[[SAT:.+]] = bit.constant 127 : si8
     %cst = bit.constant 240 : ui8
@@ -18,8 +18,8 @@ func.func @value_cast_ui_si_of() -> (si8, si8, si8, si8, si8) {
     return %0, %1, %2, %3, %4 : si8, si8, si8, si8, si8
 }
 
-// CHECK-LABEL: func.func @value_cast_si_ui_uf(
-func.func @value_cast_si_ui_uf() -> (ui8, ui8, ui8, ui8, ui8) {
+// CHECK-LABEL: func.func @cast_si_ui_uf(
+func.func @cast_si_ui_uf() -> (ui8, ui8, ui8, ui8, ui8) {
     // CHECK-DAG: %[[MOD:.+]] = bit.constant 238 : ui8
     // CHECK-DAG: %[[SAT:.+]] = bit.constant 0 : ui8
     %cst = bit.constant -18 : si8
@@ -32,8 +32,8 @@ func.func @value_cast_si_ui_uf() -> (ui8, ui8, ui8, ui8, ui8) {
     return %0, %1, %2, %3, %4 : ui8, ui8, ui8, ui8, ui8
 }
 
-// CHECK-LABEL: func.func @value_cast_ui_ui_of(
-func.func @value_cast_ui_ui_of() -> (ui4, ui4, ui4, ui4, ui4) {
+// CHECK-LABEL: func.func @cast_ui_ui_of(
+func.func @cast_ui_ui_of() -> (ui4, ui4, ui4, ui4, ui4) {
     // CHECK-DAG: %[[MOD:.+]] = bit.constant 4 : ui4
     // CHECK-DAG: %[[SAT:.+]] = bit.constant 15 : ui4
     %cst = bit.constant 68 : ui8
@@ -46,8 +46,8 @@ func.func @value_cast_ui_ui_of() -> (ui4, ui4, ui4, ui4, ui4) {
     return %0, %1, %2, %3, %4 : ui4, ui4, ui4, ui4, ui4
 }
 
-// CHECK-LABEL: func.func @value_cast_si_si_of(
-func.func @value_cast_si_si_of() -> (si4, si4, si4, si4, si4) {
+// CHECK-LABEL: func.func @cast_si_si_of(
+func.func @cast_si_si_of() -> (si4, si4, si4, si4, si4) {
     // CHECK-DAG: %[[MOD:.+]] = bit.constant -4 : si4
     // CHECK-DAG: %[[SAT:.+]] = bit.constant 7 : si4
     %cst = bit.constant 76 : si8
@@ -60,8 +60,8 @@ func.func @value_cast_si_si_of() -> (si4, si4, si4, si4, si4) {
     return %0, %1, %2, %3, %4 : si4, si4, si4, si4, si4
 }
 
-// CHECK-LABEL: func.func @value_cast_si_si_uf(
-func.func @value_cast_si_si_uf() -> (si4, si4, si4, si4, si4) {
+// CHECK-LABEL: func.func @cast_si_si_uf(
+func.func @cast_si_si_uf() -> (si4, si4, si4, si4, si4) {
     // CHECK-DAG: %[[MOD:.+]] = bit.constant -2 : si4
     // CHECK-DAG: %[[SAT:.+]] = bit.constant -8 : si4
     %cst = bit.constant -18 : si8

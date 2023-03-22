@@ -60,11 +60,11 @@ func.func @builtin_dense_bits_f16() -> (tensor<3xf16>, tensor<3xf16>, tensor<3xf
 }
 
 //===----------------------------------------------------------------------===//
-// Bitcasting
+// Casting
 //===----------------------------------------------------------------------===//
 
-// CHECK-LABEL: func.func @bitcast_bits_i16_si16(
-func.func @bitcast_bits_i16_si16() -> si16 {
+// CHECK-LABEL: func.func @cast_bits_i16_si16(
+func.func @cast_bits_i16_si16() -> si16 {
     // CHECK-DAG: %[[RET:.+]] = bit.constant 16 : si16
     %0 = bit.constant 16 : i16
     %1 = bit.cast %0 : i16 to si16
@@ -72,8 +72,8 @@ func.func @bitcast_bits_i16_si16() -> si16 {
     return %1 : si16
 }
 
-// CHECK-LABEL: func.func @bitcast_bits_f16_i16(
-func.func @bitcast_bits_f16_i16() -> i16 {
+// CHECK-LABEL: func.func @cast_bits_f16_i16(
+func.func @cast_bits_f16_i16() -> i16 {
     // CHECK-DAG: %[[RET:.+]] = bit.constant 19126 : i16
     %0 = bit.constant 1.342190e+01 : f16
     %1 = bit.cast %0 : f16 to i16
@@ -81,8 +81,8 @@ func.func @bitcast_bits_f16_i16() -> i16 {
     return %1 : i16
 }
 
-// CHECK-LABEL: func.func @bitcast_dense_bits_i16_si16(
-func.func @bitcast_dense_bits_i16_si16() -> tensor<3xsi16> {
+// CHECK-LABEL: func.func @cast_dense_bits_i16_si16(
+func.func @cast_dense_bits_i16_si16() -> tensor<3xsi16> {
     // CHECK-DAG: %[[RET:.+]] = bit.constant dense<[1, 2, 3]> : tensor<3xsi16>
     %0 = bit.constant dense<[1, 2, 3]> : tensor<3xi16>
     %1 = bit.cast %0 : tensor<3xi16> to tensor<3xsi16>
@@ -90,8 +90,8 @@ func.func @bitcast_dense_bits_i16_si16() -> tensor<3xsi16> {
     return %1 : tensor<3xsi16>
 }
 
-// CHECK-LABEL: func.func @bitcast_splat_bits_i16_si16(
-func.func @bitcast_splat_bits_i16_si16() -> tensor<3xsi16> {
+// CHECK-LABEL: func.func @cast_splat_bits_i16_si16(
+func.func @cast_splat_bits_i16_si16() -> tensor<3xsi16> {
     // CHECK-DAG: %[[RET:.+]] = bit.constant dense<1> : tensor<3xsi16>
     %0 = bit.constant dense<1> : tensor<3xi16>
     %1 = bit.cast %0 : tensor<3xi16> to tensor<3xsi16>
@@ -99,8 +99,8 @@ func.func @bitcast_splat_bits_i16_si16() -> tensor<3xsi16> {
     return %1 : tensor<3xsi16>
 }
 
-// CHECK-LABEL: func.func @bitcast_dense_bits_f16_i16(
-func.func @bitcast_dense_bits_f16_i16() -> tensor<3xi16> {
+// CHECK-LABEL: func.func @cast_dense_bits_f16_i16(
+func.func @cast_dense_bits_f16_i16() -> tensor<3xi16> {
     // CHECK-DAG: %[[RET:.+]] = bit.constant dense<[19126, 19241, 20839]> : tensor<3xi16>
     %0 = bit.constant dense<[1.342190e+01, 1.432030e+01, 4.321880e+01]> : tensor<3xf16>
     %1 = bit.cast %0 : tensor<3xf16> to tensor<3xi16>
@@ -108,8 +108,8 @@ func.func @bitcast_dense_bits_f16_i16() -> tensor<3xi16> {
     return %1 : tensor<3xi16>
 }
 
-// CHECK-LABEL: func.func @bitcast_splat_bits_f16_i16(
-func.func @bitcast_splat_bits_f16_i16() -> tensor<3xi16> {
+// CHECK-LABEL: func.func @cast_splat_bits_f16_i16(
+func.func @cast_splat_bits_f16_i16() -> tensor<3xi16> {
     // CHECK-DAG: %[[RET:.+]] = bit.constant dense<19126> : tensor<3xi16>
     %0 = bit.constant dense<1.342190e+01> : tensor<3xf16>
     %1 = bit.cast %0 : tensor<3xf16> to tensor<3xi16>

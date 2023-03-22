@@ -1,10 +1,10 @@
 // RUN: base2-opt %s --canonicalize | FileCheck %s
 
 //===----------------------------------------------------------------------===//
-// value_cast
+// cast
 //===----------------------------------------------------------------------===//
 
-func.func @value_cast_splat() -> tensor<3xsi8> {
+func.func @cast_splat() -> tensor<3xsi8> {
     // CHECK-DAG: %[[RET:.+]] = bit.constant dense<127> : tensor<3xsi8>
     %cst = bit.constant dense<240> : tensor<3xui8>
     %0 = base2.cast %cst : tensor<3xui8> to nearest tensor<3xsi8>
@@ -12,7 +12,7 @@ func.func @value_cast_splat() -> tensor<3xsi8> {
     return %0 : tensor<3xsi8>
 }
 
-func.func @value_cast_dense() -> tensor<3xsi8> {
+func.func @cast_dense() -> tensor<3xsi8> {
     // CHECK-DAG: %[[RET:.+]] = bit.constant dense<[0, 100, 127]> : tensor<3xsi8>
     %cst = bit.constant dense<[0, 100, 240]> : tensor<3xui8>
     %0 = base2.cast %cst : tensor<3xui8> to nearest tensor<3xsi8>
