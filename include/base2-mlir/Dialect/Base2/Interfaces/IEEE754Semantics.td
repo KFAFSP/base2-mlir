@@ -19,14 +19,14 @@ def Base2_IEEE754Semantics : TypeInterface<"IEEE754Semantics"> {
     let methods = [
         InterfaceMethod<
             /*desc=*/"Gets the precision in bits.",
-            /*retTy=*/"bit_width_t",
+            /*retTy=*/"bit::bit_width_t",
             /*methodName=*/"getPrecision",
             /*args=*/(ins),
             /*methodBody=*/"",
             /*defaultImplementation=*/"">,
         InterfaceMethod<
             /*desc=*/"Gets the number of exponent bits.",
-            /*retTy=*/"bit_width_t",
+            /*retTy=*/"bit::bit_width_t",
             /*methodName=*/"getExponentBits",
             /*args=*/(ins),
             /*methodBody=*/"",
@@ -44,12 +44,12 @@ def Base2_IEEE754Semantics : TypeInterface<"IEEE754Semantics"> {
     code extraTraitClassDeclaration = [{
     public:
         /// Gets the total number of bits.
-        [[nodiscard]] bit_width_t getBitWidth() const
+        [[nodiscard]] bit::bit_width_t getBitWidth() const
         {
             return $_type.getPrecision() + $_type.getExponentBits();
         }
         /// Gets the number of bits stored in the mantissa field.
-        [[nodiscard]] bit_width_t getMantissaBits() const
+        [[nodiscard]] bit::bit_width_t getMantissaBits() const
         {
             return $_type.getPrecision() - 1;
         }
@@ -71,12 +71,12 @@ def Base2_IEEE754Semantics : TypeInterface<"IEEE754Semantics"> {
     code extraClassDeclaration = [{
     public:
         /// Gets the total number of bits.
-        [[nodiscard]] bit_width_t getBitWidth() const
+        [[nodiscard]] bit::bit_width_t getBitWidth() const
         {
             return getPrecision() + getExponentBits();
         }
         /// Gets the number of bits stored in the mantissa field.
-        [[nodiscard]] bit_width_t getMantissaBits() const
+        [[nodiscard]] bit::bit_width_t getMantissaBits() const
         {
             return getPrecision() - 1;
         }
@@ -97,21 +97,21 @@ def Base2_IEEE754Semantics : TypeInterface<"IEEE754Semantics"> {
         //===--------------------------------------------------------------===//
 
         /// Obtains the BitSequence representing zero.
-        BitSequence getZero(bool negative = false) const
+        bit::BitSequence getZero(bool negative = false) const
         {
             return negative
                 ? llvm::APInt::getOneBitSet(getBitWidth(), getBitWidth() - 1)
-                : BitSequence::zeros(getBitWidth());
+                : bit::BitSequence::zeros(getBitWidth());
         }
         /// Obtains the BitSequence representing the smallest value.
-        BitSequence getMin() const
+        bit::BitSequence getMin() const
         {
             llvm::APInt result(getBitWidth(), 0, false);
             result.setHighBits(getExponentBits() + 1);
             return result;
         }
         /// Obtains the BitSequence representing the largest value.
-        BitSequence getMax() const
+        bit::BitSequence getMax() const
         {
             llvm::APInt result(getBitWidth(), 0, false);
             result.setHighBits(getExponentBits() + 1);
@@ -119,7 +119,7 @@ def Base2_IEEE754Semantics : TypeInterface<"IEEE754Semantics"> {
             return result;
         }
         /// Obtains the BitSequence representing a NaN value.
-        BitSequence getNaN(bool negative = false) const
+        bit::BitSequence getNaN(bool negative = false) const
         {
             auto result = llvm::APInt::getAllOnes(getBitWidth());
             if (!negative) result.clearSignBit();
@@ -129,7 +129,7 @@ def Base2_IEEE754Semantics : TypeInterface<"IEEE754Semantics"> {
         ///
         /// @pre    `!data.isZero()`
         /// @pre    `data.size() <= getMantissaBits()`
-        BitSequence getNaN(BitSequence data, bool negative = false) const
+        bit::BitSequence getNaN(bit::BitSequence data, bool negative = false) const
         {
             assert(!data.isZeros());
             assert(data.size() <= getMantissaBits());
@@ -179,8 +179,8 @@ def Base2_IEEE754Semantics : TypeInterface<"IEEE754Semantics"> {
         /// @pre    `getBitWidth(bias) <=> exponentBits`
         [[nodiscard]] static IEEE754Semantics get(
             MLIRContext *ctx,
-            bit_width_t precision,
-            bit_width_t exponentBits,
+            bit::bit_width_t precision,
+            bit::bit_width_t exponentBits,
             exponent_t bias);
         /// Gets a canonical IEEE754Semantics type.
         ///
@@ -189,7 +189,7 @@ def Base2_IEEE754Semantics : TypeInterface<"IEEE754Semantics"> {
         /// @pre    `maxExponent >= minExponent`
         [[nodiscard]] static IEEE754Semantics get(
             MLIRContext *ctx,
-            bit_width_t precision,
+            bit::bit_width_t precision,
             exponent_t maxExponent,
             exponent_t minExponent)
         {
@@ -203,7 +203,7 @@ def Base2_IEEE754Semantics : TypeInterface<"IEEE754Semantics"> {
         /// @pre    `precision >= 2`
         [[nodiscard]] static IEEE754Semantics get(
             MLIRContext *ctx,
-            bit_width_t precision,
+            bit::bit_width_t precision,
             exponent_t maxExponent)
         {
             return get(ctx, precision, exponent_t(1) - maxExponent);

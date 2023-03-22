@@ -20,8 +20,9 @@ using namespace mlir::base2;
 // FixedPointSemantics
 //===----------------------------------------------------------------------===//
 
-FixedPointSemantics
-FixedPointSemantics::get(IntegerType integerType, bit_width_t fractionalBits)
+FixedPointSemantics FixedPointSemantics::get(
+    IntegerType integerType,
+    bit::bit_width_t fractionalBits)
 {
     // NOTE: This is of debatable use and unexpected.
     // if (fractionalBits == 0) return integerType.cast<FixedPointSemantics>();
@@ -45,7 +46,7 @@ FixedPointSemantics FixedPointSemantics::parse(MLIRContext* ctx, StringRef str)
         return FixedPointSemantics{};
 
     // [0-9]+
-    bit_width_t integerBits, fractionalBits = 0;
+    bit::bit_width_t integerBits, fractionalBits = 0;
     if (str.consumeInteger(10, integerBits)) return FixedPointSemantics{};
 
     // (`_` [0-9]+)?

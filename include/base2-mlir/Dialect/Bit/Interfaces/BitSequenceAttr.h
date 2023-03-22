@@ -1,16 +1,16 @@
-/// Declares the Base2 BitSequenceAttr interface.
+/// Declares the Bit BitSequenceAttr interface.
 ///
 /// @file
 /// @author     Karl F. A. Friebel (karl.friebel@tu-dresden.de)
 
 #pragma once
 
-#include "base2-mlir/Dialect/Base2/Analysis/BitSequence.h"
-#include "base2-mlir/Dialect/Base2/Interfaces/BitSequenceType.h"
+#include "base2-mlir/Dialect/Bit/Analysis/BitSequence.h"
+#include "base2-mlir/Dialect/Bit/Interfaces/BitSequenceType.h"
 #include "mlir/IR/BuiltinAttributeInterfaces.h"
 #include "mlir/IR/OpDefinition.h"
 
-namespace mlir::base2 {
+namespace mlir::bit {
 
 /// Reference to an unary BitSequence operation.
 using UnaryBitSequenceFn =
@@ -20,15 +20,15 @@ using UnaryBitSequenceFn =
 using BinaryBitSequenceFn = function_ref<
     std::optional<BitSequence>(const BitSequence &, const BitSequence &)>;
 
-} // namespace mlir::base2
+} // namespace mlir::bit
 
 //===- Generated includes -------------------------------------------------===//
 
-#include "base2-mlir/Dialect/Base2/Interfaces/BitSequenceAttr.h.inc"
+#include "base2-mlir/Dialect/Bit/Interfaces/BitSequenceAttr.h.inc"
 
 //===----------------------------------------------------------------------===//
 
-namespace mlir::base2 {
+namespace mlir::bit {
 
 //===----------------------------------------------------------------------===//
 // DenseBitSequencesAttr
@@ -330,4 +330,4 @@ public:
 /// Implements the BitSequenceAttr interface for built-in types.
 void registerBitSequenceAttrModels(MLIRContext &ctx);
 
-} // namespace mlir::base2
+} // namespace mlir::bit

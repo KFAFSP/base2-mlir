@@ -3,7 +3,7 @@
 /// @file
 /// @author     Karl F. A. Friebel (karl.friebel@tu-dresden.de)
 
-#include "base2-mlir/Dialect/Base2/Analysis/BitSequence.h"
+#include "base2-mlir/Dialect/Bit/Analysis/BitSequence.h"
 
 #include "llvm/ADT/Sequence.h"
 #include "llvm/ADT/SmallString.h"
@@ -12,7 +12,7 @@
 #include <algorithm>
 
 using namespace mlir;
-using namespace mlir::base2;
+using namespace mlir::bit;
 
 /// Type of the words in storage.
 using word_type = llvm::APInt::WordType;
@@ -309,7 +309,7 @@ void BitSequence::fromBytes(
 }
 
 //===----------------------------------------------------------------------===//
-// FieldParser<base2::BitSequence>
+// FieldParser<bit::BitSequence>
 //===----------------------------------------------------------------------===//
 
 FailureOr<BitSequence> mlir::FieldParser<BitSequence>::parse(AsmParser &parser)
@@ -377,7 +377,7 @@ FailureOr<BitSequence> mlir::FieldParser<BitSequence>::parse(AsmParser &parser)
     return builder.toBitSequence();
 }
 
-void base2::getBytes(
+void bit::getBytes(
     llvm::SmallVectorImpl<std::uint8_t> &result,
     ArrayRef<BitSequence> values,
     std::endian endian)

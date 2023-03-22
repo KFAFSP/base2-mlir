@@ -17,7 +17,7 @@ using namespace mlir::base2;
 /// @pre    `fractionalBits <= value.getBitWidth()`
 static llvm::APInt getRescaleBias(
     bool isSigned,
-    bit_width_t fractionalBits,
+    bit::bit_width_t fractionalBits,
     APInt value,
     RoundingMode roundingMode)
 {
@@ -70,8 +70,8 @@ static llvm::APInt getRescaleBias(
 
 FixedPointInterpreter::auto_result FixedPointInterpreter::rescale(
     FixedPointSemantics sema,
-    const BitSequence &value,
-    bit_width_t outFracBits,
+    const bit::BitSequence &value,
+    bit::bit_width_t outFracBits,
     RoundingMode roundingMode)
 {
     assert(sema);
@@ -128,7 +128,7 @@ FixedPointInterpreter::auto_result FixedPointInterpreter::rescale(
 
 bit_result FixedPointInterpreter::valueCast(
     FixedPointSemantics from,
-    const BitSequence &value,
+    const bit::BitSequence &value,
     FixedPointSemantics to,
     RoundingMode roundingMode)
 {
@@ -174,7 +174,7 @@ bit_result FixedPointInterpreter::valueCast(
 ///
 /// @pre    `lhs`
 /// @pre    `rhs`
-[[nodiscard]] static std::tuple<Signedness, bit_width_t, bit_width_t>
+[[nodiscard]] static std::tuple<Signedness, bit::bit_width_t, bit::bit_width_t>
 align(FixedPointSemantics lhs, FixedPointSemantics rhs)
 {
     assert(lhs && rhs);
@@ -201,7 +201,7 @@ align(FixedPointSemantics lhs, FixedPointSemantics rhs)
 ///
 /// @pre    `outBits >= in.getBitWidth()`
 static llvm::APInt
-extend(bool isSigned, const llvm::APInt &in, bit_width_t outBits)
+extend(bool isSigned, const llvm::APInt &in, bit::bit_width_t outBits)
 {
     assert(outBits >= in.getBitWidth());
 
@@ -214,9 +214,9 @@ extend(bool isSigned, const llvm::APInt &in, bit_width_t outBits)
 /// @pre    no overflow will occur
 static llvm::APInt alignFractionalExact(
     bool isSigned,
-    bit_width_t inFractionalBits,
+    bit::bit_width_t inFractionalBits,
     const llvm::APInt in,
-    bit_width_t outFractionalBits)
+    bit::bit_width_t outFractionalBits)
 {
     assert(inFractionalBits <= outFractionalBits);
 
@@ -240,9 +240,9 @@ static llvm::APInt alignFractionalExact(
 /// @pre    `!from.isSignless()`
 /// @pre    `to.isSupersetOf(from)`
 /// @pre    `!to.isSignless()`
-BitSequence alignExact(
+bit::BitSequence alignExact(
     FixedPointSemantics from,
-    const BitSequence &value,
+    const bit::BitSequence &value,
     FixedPointSemantics to)
 {
     assert(from && to);
@@ -275,9 +275,9 @@ BitSequence alignExact(
 /// @pre    `outSema.isSupersetOf(lhsSema) && outSema.isSupersetOf(rhsSema)`
 FixedPointInterpreter::align_result alignExact(
     FixedPointSemantics lhsSema,
-    const BitSequence &lhs,
+    const bit::BitSequence &lhs,
     FixedPointSemantics rhsSema,
-    const BitSequence &rhs,
+    const bit::BitSequence &rhs,
     FixedPointSemantics outSema)
 {
     return {
@@ -301,9 +301,9 @@ FixedPointInterpreter::promote(FixedPointSemantics lhs, FixedPointSemantics rhs)
 
 FixedPointInterpreter::align_result FixedPointInterpreter::promote(
     FixedPointSemantics lhsSema,
-    const BitSequence &lhs,
+    const bit::BitSequence &lhs,
     FixedPointSemantics rhsSema,
-    const BitSequence &rhs)
+    const bit::BitSequence &rhs)
 {
     if (const auto outSema = promote(lhsSema, rhsSema))
         return ::alignExact(lhsSema, lhs, rhsSema, rhs, outSema);
@@ -330,9 +330,9 @@ FixedPointInterpreter::add(FixedPointSemantics lhs, FixedPointSemantics rhs)
 
 FixedPointInterpreter::auto_result FixedPointInterpreter::add(
     FixedPointSemantics lhsSema,
-    const BitSequence &lhs,
+    const bit::BitSequence &lhs,
     FixedPointSemantics rhsSema,
-    const BitSequence &rhs)
+    const bit::BitSequence &rhs)
 {
     const auto outSema = add(lhsSema, rhsSema);
     if (!outSema) return std::nullopt;
@@ -374,9 +374,9 @@ FixedPointInterpreter::sub(FixedPointSemantics lhs, FixedPointSemantics rhs)
 
 FixedPointInterpreter::auto_result FixedPointInterpreter::sub(
     FixedPointSemantics lhsSema,
-    const BitSequence &lhs,
+    const bit::BitSequence &lhs,
     FixedPointSemantics rhsSema,
-    const BitSequence &rhs)
+    const bit::BitSequence &rhs)
 {
     const auto outSema = add(lhsSema, rhsSema);
     if (!outSema) return std::nullopt;
@@ -420,9 +420,9 @@ FixedPointInterpreter::mul(FixedPointSemantics lhs, FixedPointSemantics rhs)
 
 FixedPointInterpreter::auto_result FixedPointInterpreter::mul(
     FixedPointSemantics lhsSema,
-    const BitSequence &lhs,
+    const bit::BitSequence &lhs,
     FixedPointSemantics rhsSema,
-    const BitSequence &rhs)
+    const bit::BitSequence &rhs)
 {
     const auto outSema = mul(lhsSema, rhsSema);
     if (!outSema) return std::nullopt;
@@ -463,9 +463,9 @@ FixedPointInterpreter::div(FixedPointSemantics lhs, FixedPointSemantics rhs)
 
 FixedPointInterpreter::auto_result FixedPointInterpreter::div(
     FixedPointSemantics lhsSema,
-    const BitSequence &lhs,
+    const bit::BitSequence &lhs,
     FixedPointSemantics rhsSema,
-    const BitSequence &rhs)
+    const bit::BitSequence &rhs)
 {
     const auto outSema = div(lhsSema, rhsSema);
     if (!outSema) return std::nullopt;

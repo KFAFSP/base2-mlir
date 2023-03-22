@@ -1,18 +1,18 @@
-/// Implements the Base2 dialect BitSequenceType interface.
+/// Implements the Bit dialect BitSequenceType interface.
 ///
 /// @file
 /// @author     Karl F. A. Friebel (karl.friebel@tu-dresden.de)
 
-#include "base2-mlir/Dialect/Base2/Interfaces/BitSequenceType.h"
+#include "base2-mlir/Dialect/Bit/Interfaces/BitSequenceType.h"
 
-#include "base2-mlir/Dialect/Base2/IR/Base2.h"
+#include "base2-mlir/Dialect/Bit/IR/Bit.h"
 
 using namespace mlir;
-using namespace mlir::base2;
+using namespace mlir::bit;
 
 //===- Generated implementation -------------------------------------------===//
 
-#include "base2-mlir/Dialect/Base2/Interfaces/BitSequenceType.cpp.inc"
+#include "base2-mlir/Dialect/Bit/Interfaces/BitSequenceType.cpp.inc"
 
 //===----------------------------------------------------------------------===//
 
@@ -35,7 +35,7 @@ struct IntModel : BitSequenceType::ExternalModel<IntModel, IntegerType> {
 
 } // namespace
 
-void base2::registerBitSequenceTypeModels(MLIRContext &ctx)
+void bit::registerBitSequenceTypeModels(MLIRContext &ctx)
 {
     Float8E5M2Type::attachInterface<FloatModel<Float8E5M2Type>>(ctx);
     BFloat16Type::attachInterface<FloatModel<BFloat16Type>>(ctx);

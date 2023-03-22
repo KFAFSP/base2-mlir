@@ -10,6 +10,7 @@
 include "base2-mlir/Dialect/Base2/IR/Attributes.td"
 include "base2-mlir/Dialect/Base2/Interfaces/FixedPointSemantics.td"
 include "base2-mlir/Dialect/Base2/Interfaces/IEEE754Semantics.td"
+include "base2-mlir/Dialect/Bit/Interfaces/BitSequenceType.td"
 include "mlir/IR/BuiltinTypeInterfaces.td"
 
 //===----------------------------------------------------------------------===//
@@ -19,7 +20,7 @@ include "mlir/IR/BuiltinTypeInterfaces.td"
 def Base2_FixedPointType : Base2_Type<
         "FixedPoint",
         [
-            Base2_BitSequenceType,
+            Bit_BitSequenceType,
             Base2_FixedPointSemantics,
             DeclareTypeInterfaceMethods<
                 Base2_InterpretableType,
@@ -67,19 +68,19 @@ def Base2_FixedPointType : Base2_Type<
 
     let parameters = (ins
         "IntegerType":$integerType,
-        "bit_width_t":$fractionalBits);
+        "bit::bit_width_t":$fractionalBits);
 
     let builders = [
         TypeBuilderWithInferredContext<(ins
             "IntegerType":$integerType,
-            CArg<"bit_width_t", "0">:$fractionalBits),
+            CArg<"bit::bit_width_t", "0">:$fractionalBits),
         [{
             return $_get(integerType.getContext(), integerType, fractionalBits);
         }]>,
         TypeBuilder<(ins
                 "Signedness":$signedness,
-                "bit_width_t":$integerBits,
-                CArg<"bit_width_t", "0">:$fractionalBits),
+                "bit::bit_width_t":$integerBits,
+                CArg<"bit::bit_width_t", "0">:$fractionalBits),
         [{
             return $_get(
                 $_ctxt,
@@ -101,14 +102,14 @@ def Base2_FixedPointType : Base2_Type<
         static LogicalResult verify(
             function_ref<InFlightDiagnostic()> emitError,
             Signedness signedness,
-            bit_width_t integerBits,
-            bit_width_t fractionalBits);
+            bit::bit_width_t integerBits,
+            bit::bit_width_t fractionalBits);
 
         //===--------------------------------------------------------------===//
         // BitSequenceType
         //===--------------------------------------------------------------===//
 
-        [[nodiscard]] bit_width_t getBitWidth() const
+        [[nodiscard]] bit::bit_width_t getBitWidth() const
         {
             return getIntegerType().getWidth();
         }
@@ -122,7 +123,7 @@ def Base2_FixedPointType : Base2_Type<
 def Base2_IEEE754Type : Base2_Type<
         "IEEE754",
         [
-            Base2_BitSequenceType,
+            Bit_BitSequenceType,
             Base2_IEEE754Semantics,
             DeclareTypeInterfaceMethods<Base2_InterpretableType, []>]> {
     let mnemonic = "ieee754";
@@ -169,13 +170,13 @@ def Base2_IEEE754Type : Base2_Type<
     }];
 
     let parameters = (ins
-        "bit_width_t":$precision,
-        "bit_width_t":$exponentBits,
+        "bit::bit_width_t":$precision,
+        "bit::bit_width_t":$exponentBits,
         "exponent_t":$bias);
 
     let builders = [
         TypeBuilder<(ins
-            "bit_width_t":$precision,
+            "bit::bit_width_t":$precision,
             "exponent_t":$maxExponent,
             "exponent_t":$minExponent),
         [{
@@ -183,7 +184,7 @@ def Base2_IEEE754Type : Base2_Type<
                 getExponentParams(maxExponent, minExponent);
             return $_get($_ctxt, precision, exponentBits, bias);
         }]>,
-        TypeBuilder<(ins "bit_width_t":$precision, "exponent_t":$maxExponent),
+        TypeBuilder<(ins "bit::bit_width_t":$precision, "exponent_t":$maxExponent),
         [{
             return $_get(
                 $_ctxt,

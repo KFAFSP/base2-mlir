@@ -1,11 +1,11 @@
 //===- BitSequenceAttr.td ----------------------------------*- tablegen -*-===//
 //
-// This is the definitions file for the Base2 BitSequenceAttr interface.
+// This is the definitions file for the Bit BitSequenceAttr interface.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef BASE2_BITSEQUENCEATTR
-#define BASE2_BITSEQUENCEATTR
+#ifndef BIT_BITSEQUENCEATTR
+#define BIT_BITSEQUENCEATTR
 
 include "mlir/IR/OpBase.td"
 
@@ -13,8 +13,8 @@ include "mlir/IR/OpBase.td"
 // BitSequenceAttr
 //===----------------------------------------------------------------------===//
 
-def Base2_BitSequenceAttr : AttrInterface<"BitSequenceAttr"> {
-    let cppNamespace = "::mlir::base2";
+def Bit_BitSequenceAttr : AttrInterface<"BitSequenceAttr"> {
+    let cppNamespace = "::mlir::bit";
 
     let description = [{
         Interface for an attribute that declares a compile-time constant
@@ -120,11 +120,11 @@ def Base2_BitSequenceAttr : AttrInterface<"BitSequenceAttr"> {
 // DenseBitSequencesAttr
 //===----------------------------------------------------------------------===//
 
-def Base2_DenseBitSequencesAttr : Attr<
-        /*condition=*/CPred<"$_self.isa<::mlir::base2::DenseBitSequencesAttr>()">,
+def Bit_DenseBitSequencesAttr : Attr<
+        /*condition=*/CPred<"$_self.isa<::mlir::bit::DenseBitSequencesAttr>()">,
         /*desc=*/"Constant densely-packed bit sequence container attribute"> {
-    code storageType = "::mlir::base2::DenseBitSequencesAttr";
-    code returnType = "::mlir::base2::DenseBitSequencesAttr::range";
+    code storageType = "::mlir::bit::DenseBitSequencesAttr";
+    code returnType = "::mlir::bit::DenseBitSequencesAttr::range";
     code convertFromStorage = "$_self.getValues()";
 }
 
@@ -132,11 +132,11 @@ def Base2_DenseBitSequencesAttr : Attr<
 // BitSequenceLikeAttr
 //===----------------------------------------------------------------------===//
 
-def Base2_BitSequenceLikeAttr : Attr<
-        /*condition=*/CPred<"$_self.isa<::mlir::base2::BitSequenceLikeAttr>()">,
+def Bit_BitSequenceLikeAttr : Attr<
+        /*condition=*/CPred<"$_self.isa<::mlir::bit::BitSequenceLikeAttr>()">,
         /*desc=*/"Value or container of values of BitSequenceType attribute"> {
-    code storageType = "::mlir::base2::BitSequenceLikeAttr";
-    code returnType = "::mlir::base2::BitSequenceLikeAttr";
+    code storageType = "::mlir::bit::BitSequenceLikeAttr";
+    code returnType = "::mlir::bit::BitSequenceLikeAttr";
     code convertFromStorage = "$_self";
 }
 

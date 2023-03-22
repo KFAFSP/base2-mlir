@@ -21,7 +21,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace mlir::base2 {
+namespace mlir::bit {
 
 /// Concept requiring that @p T is a C++ BitSequenceType.
 template<class T>
@@ -556,13 +556,13 @@ void getBytes(
     ArrayRef<BitSequence> values,
     std::endian endian = std::endian::native);
 
-} // namespace mlir::base2
+} // namespace mlir::bit
 
 namespace mlir {
 
 template<>
-struct FieldParser<base2::BitSequence> {
-    static FailureOr<base2::BitSequence> parse(AsmParser &parser);
+struct FieldParser<bit::BitSequence> {
+    static FailureOr<bit::BitSequence> parse(AsmParser &parser);
 };
 
 } // namespace mlir

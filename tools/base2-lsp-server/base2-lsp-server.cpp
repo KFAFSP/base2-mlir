@@ -4,6 +4,7 @@
 /// @author     Karl F. A. Friebel (karl.friebel@tu-dresden.de)
 
 #include "base2-mlir/Dialect/Base2/IR/Base2.h"
+#include "base2-mlir/Dialect/Bit/IR/Bit.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/InitAllDialects.h"
@@ -22,6 +23,7 @@ int main(int argc, char* argv[])
     registerAllDialects(registry);
 
     registry.insert<base2::Base2Dialect>();
+    registry.insert<bit::BitDialect>();
 
     return asMainReturnCode(MlirLspServerMain(argc, argv, registry));
 }

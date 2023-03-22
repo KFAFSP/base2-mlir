@@ -26,12 +26,10 @@ def Base2_Dialect : Dialect {
 
     let hasConstantMaterializer = 1;
     let useDefaultTypePrinterParser = 0;
-    let useDefaultAttributePrinterParser = 1;
     let useFoldAPI = kEmitFoldAdaptorFolder;
 
     code extraClassDeclaration = [{
     private:
-        void registerAttributes();
         void registerOps();
         void registerTypes();
 
@@ -40,9 +38,6 @@ def Base2_Dialect : Dialect {
     }];
 }
 
-// Template for attributes.
-class Base2_Attr<string name, list<Trait> traits = []>
-        : AttrDef<Base2_Dialect, name, traits>;
 // Template for ops.
 class Base2_Op<string mnemonic, list<Trait> traits = []>
         : Op<Base2_Dialect, mnemonic, traits>;

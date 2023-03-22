@@ -5,9 +5,9 @@
 
 #pragma once
 
-#include "base2-mlir/Dialect/Base2/Analysis/BitSequence.h"
 #include "base2-mlir/Dialect/Base2/Analysis/ValueFacts.h"
 #include "base2-mlir/Dialect/Base2/Enums.h"
+#include "base2-mlir/Dialect/Bit/Analysis/BitSequence.h"
 
 #include "llvm/ADT/APInt.h"
 
@@ -69,18 +69,18 @@ public:
     //===------------------------------------------------------------------===//
 
     /// Gets the zero value for @p width .
-    static llvm::APInt getZero(bit_width_t width)
+    static llvm::APInt getZero(bit::bit_width_t width)
     {
         return llvm::APInt(width, 0, false);
     }
     /// Gets the minimum value for @p isSigned and @p width .
-    static llvm::APInt getMin(bool isSigned, bit_width_t width)
+    static llvm::APInt getMin(bool isSigned, bit::bit_width_t width)
     {
         return isSigned ? llvm::APInt::getSignedMinValue(width)
                         : llvm::APInt::getMinValue(width);
     }
     /// Gets the maximum value for @p isSigned and @p width .
-    static llvm::APInt getMax(bool isSigned, bit_width_t width)
+    static llvm::APInt getMax(bool isSigned, bit::bit_width_t width)
     {
         return isSigned ? llvm::APInt::getSignedMaxValue(width)
                         : llvm::APInt::getMaxValue(width);

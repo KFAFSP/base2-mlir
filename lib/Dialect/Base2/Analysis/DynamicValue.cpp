@@ -6,6 +6,7 @@
 #include "base2-mlir/Dialect/Base2/Analysis/DynamicValue.h"
 
 #include "base2-mlir/Dialect/Base2/IR/Base2.h"
+#include "base2-mlir/Dialect/Bit/IR/Bit.h"
 
 #define DEBUG_TYPE "base2-dynamicvalue"
 
@@ -58,14 +59,14 @@ DynamicValue::DynamicValue(Value value, ValueFacts facts)
     if (!value) return;
 
     // Look through ConstantOp results.
-    if (auto constOp = value.getDefiningOp<ConstantOp>()) {
+    if (auto constOp = value.getDefiningOp<bit::ConstantOp>()) {
         const auto attr = constOp.getValue();
         m_binding = attr;
         m_facts |= BitInterpreter::getFacts(attr);
     }
 }
 
-DynamicValue::DynamicValue(BitSequenceLikeAttr attr)
+DynamicValue::DynamicValue(bit::BitSequenceLikeAttr attr)
         : DynamicValueBase(BitInterpreter::getFacts(attr)),
           m_binding(attr)
 {}
@@ -86,7 +87,8 @@ DynamicValue::cmp(PartialOrderingPredicate pred, DynamicValue rhs) const
             return BoolAttr::get(getType().getContext(), value);
         };
 
-        return makeSplat(matches(*ordering, pred)).cast<BitSequenceLikeAttr>();
+        return makeSplat(matches(*ordering, pred))
+            .cast<bit::BitSequenceLikeAttr>();
     }
 
     return DynamicValue{};

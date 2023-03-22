@@ -5,10 +5,10 @@
 
 #pragma once
 
-#include "base2-mlir/Dialect/Base2/Analysis/BitSequence.h"
 #include "base2-mlir/Dialect/Base2/Enums.h"
-#include "base2-mlir/Dialect/Base2/Interfaces/BitSequenceType.h"
 #include "base2-mlir/Dialect/Base2/Interfaces/InterpretableType.h"
+#include "base2-mlir/Dialect/Bit/Analysis/BitSequence.h"
+#include "base2-mlir/Dialect/Bit/Interfaces/BitSequenceType.h"
 #include "mlir/IR/OpDefinition.h"
 
 #include "llvm/ADT/APFloat.h"
@@ -49,7 +49,7 @@ static constexpr auto max_exponent = std::numeric_limits<exponent_t>::max();
 ///
 /// @pre    `exponentBits >= 2 && exponentBits <= max_exponent_bits`
 [[nodiscard]] constexpr exponent_t
-getMaxExponent(exponent_t bias, bit_width_t exponentBits)
+getMaxExponent(exponent_t bias, bit::bit_width_t exponentBits)
 {
     assert(exponentBits >= 2 && exponentBits <= max_exponent_bits);
 
@@ -71,7 +71,7 @@ getExponentRange(exponent_t maxExponent, exponent_t minExponent)
 }
 
 /// Stores parameters for an IEEE-754 exponent (bit width and bias).
-using exponent_params = std::pair<bit_width_t, exponent_t>;
+using exponent_params = std::pair<bit::bit_width_t, exponent_t>;
 
 /// Calculate the bit width and bias for the given exponent parameters.
 ///
@@ -95,7 +95,7 @@ getExponentParams(exponent_t maxExponent, exponent_t minExponent)
 /// Calculate the midpoint value for @p exponentBits .
 ///
 /// @pre    `exponentBits >= 1 && exponentBits <= max_exponent_bits`
-[[nodiscard]] constexpr exponent_t getBias(bit_width_t exponentBits)
+[[nodiscard]] constexpr exponent_t getBias(bit::bit_width_t exponentBits)
 {
     assert(exponentBits >= 1 && exponentBits <= max_exponent_bits);
 
@@ -127,7 +127,7 @@ namespace mlir::base2 {
 ///
 /// Satisfied by a BitSequenceLikeType type, the elements of which also satisfy
 /// IEEE754Semantics.
-class IEEE754LikeType : public BitSequenceLikeType {
+class IEEE754LikeType : public bit::BitSequenceLikeType {
 public:
     /// @copydoc classof(Type)
     [[nodiscard]] static bool classof(BitSequenceLikeType type)
@@ -144,7 +144,7 @@ public:
     }
 
     using BitSequenceLikeType::BitSequenceLikeType;
-    /*implicit*/ IEEE754LikeType(BitSequenceType) = delete;
+    /*implicit*/ IEEE754LikeType(bit::BitSequenceType) = delete;
     /// Initializes a IEEE754LikeType from @p type .
     ///
     /// @pre    `type`

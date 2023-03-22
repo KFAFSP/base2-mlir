@@ -5,10 +5,10 @@
 
 #pragma once
 
-#include "base2-mlir/Dialect/Base2/Analysis/BitSequence.h"
 #include "base2-mlir/Dialect/Base2/Enums.h"
-#include "base2-mlir/Dialect/Base2/Interfaces/BitSequenceType.h"
 #include "base2-mlir/Dialect/Base2/Interfaces/InterpretableType.h"
+#include "base2-mlir/Dialect/Bit/Analysis/BitSequence.h"
+#include "base2-mlir/Dialect/Bit/Interfaces/BitSequenceType.h"
 #include "mlir/IR/OpDefinition.h"
 
 #include "llvm/ADT/StringRef.h"
@@ -30,7 +30,7 @@ namespace mlir::base2 {
 ///
 /// Satisfied by a BitSequenceLikeType, the elements of which also satisfy
 /// FixedPointSemantics.
-class FixedPointLikeType : public BitSequenceLikeType {
+class FixedPointLikeType : public bit::BitSequenceLikeType {
 public:
     /// @copydoc classof(Type)
     [[nodiscard]] static bool classof(BitSequenceLikeType type)
@@ -47,7 +47,7 @@ public:
     }
 
     using BitSequenceLikeType::BitSequenceLikeType;
-    /*implicit*/ FixedPointLikeType(BitSequenceType) = delete;
+    /*implicit*/ FixedPointLikeType(bit::BitSequenceType) = delete;
     /// Initializes a FixedPointLikeType from @p type .
     ///
     /// @pre    `type`

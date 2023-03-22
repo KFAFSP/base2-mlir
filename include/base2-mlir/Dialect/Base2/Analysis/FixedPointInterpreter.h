@@ -16,21 +16,23 @@ namespace mlir::base2 {
 /// Implements constant folding for fixed-point numbers.
 class FixedPointInterpreter {
 public:
-    /// Optional BitSequence result type.
-    using bit_result = std::optional<BitSequence>;
+    /// Optional bit::BitSequence result type.
+    using bit_result = std::optional<bit::BitSequence>;
 
-    /// Optional BitSequence with associated FixedPointSemantics.
+    /// Optional bit::BitSequence with associated FixedPointSemantics.
     struct [[nodiscard]] auto_result
-            : std::pair<FixedPointSemantics, BitSequence> {
+            : std::pair<FixedPointSemantics, bit::BitSequence> {
         /*implicit*/ auto_result() : pair() {}
         /*implicit*/ auto_result(std::nullopt_t) : auto_result() {}
-        /*implicit*/ auto_result(FixedPointSemantics sema, BitSequence value)
+        /*implicit*/ auto_result(
+            FixedPointSemantics sema,
+            bit::BitSequence value)
                 : pair(sema, std::move(value))
         {}
 
         FixedPointSemantics getSemantics() const { return first; }
-        BitSequence &&getValue() && { return std::move(second); }
-        const BitSequence &getValue() const & { return second; }
+        bit::BitSequence &&getValue() && { return std::move(second); }
+        const bit::BitSequence &getValue() const & { return second; }
 
         /*implicit*/ operator FixedPointSemantics() const
         {
@@ -43,22 +45,24 @@ public:
     };
 
     /// Optional pair of BitSequences with associated FixedPointSemantics.
-    struct [[nodiscard]] align_result
-            : std::tuple<FixedPointSemantics, BitSequence, BitSequence> {
+    struct [[nodiscard]] align_result : std::tuple<
+                                            FixedPointSemantics,
+                                            bit::BitSequence,
+                                            bit::BitSequence> {
         /*implicit*/ align_result() : tuple() {}
         /*implicit*/ align_result(std::nullopt_t) : align_result() {}
         /*implicit*/ align_result(
             FixedPointSemantics sema,
-            BitSequence lhs,
-            BitSequence rhs)
+            bit::BitSequence lhs,
+            bit::BitSequence rhs)
                 : tuple(sema, std::move(lhs), std::move(rhs))
         {}
 
         FixedPointSemantics getSemantics() const { return std::get<0>(*this); }
-        BitSequence &&getLhs() && { return std::get<1>(std::move(*this)); }
-        const BitSequence &getLhs() const & { return std::get<1>(*this); }
-        BitSequence &&getRhs() && { return std::get<2>(std::move(*this)); }
-        const BitSequence &getRhs() const & { return std::get<2>(*this); }
+        bit::BitSequence &&getLhs() && { return std::get<1>(std::move(*this)); }
+        const bit::BitSequence &getLhs() const & { return std::get<1>(*this); }
+        bit::BitSequence &&getRhs() && { return std::get<2>(std::move(*this)); }
+        const bit::BitSequence &getRhs() const & { return std::get<2>(*this); }
 
         /*implicit*/ operator FixedPointSemantics() const
         {
@@ -80,8 +84,8 @@ public:
     /// @pre    `value.getBitWidth() == sema.getBitWidth()`
     static auto_result rescale(
         FixedPointSemantics sema,
-        const BitSequence &value,
-        bit_width_t outFracBits,
+        const bit::BitSequence &value,
+        bit::bit_width_t outFracBits,
         RoundingMode roundingMode = RoundingMode::None);
 
     /// Converts @p value with @p from semantics to @p to semantics.
@@ -91,7 +95,7 @@ public:
     /// @pre    `value.getBitWidth() == from.getBitWidth()`
     [[nodiscard]] static bit_result valueCast(
         FixedPointSemantics from,
-        const BitSequence &value,
+        const bit::BitSequence &value,
         FixedPointSemantics to,
         RoundingMode roundingMode = RoundingMode::None);
 
@@ -104,8 +108,8 @@ public:
     /// @pre    `sema`
     [[nodiscard]] static cmp_result
     cmp(FixedPointSemantics sema,
-        const BitSequence &lhs,
-        const BitSequence &rhs)
+        const bit::BitSequence &lhs,
+        const bit::BitSequence &rhs)
     {
         assert(sema);
         if (sema.isSignless()) return std::nullopt;
@@ -117,7 +121,7 @@ public:
     ///
     /// @pre    `sema`
     [[nodiscard]] static ValueFacts
-    getFacts(FixedPointSemantics sema, const BitSequence &value)
+    getFacts(FixedPointSemantics sema, const bit::BitSequence &value)
     {
         assert(sema);
 
@@ -135,8 +139,8 @@ public:
     /// @pre    `rhs.size() == sema.getBitWidth()`
     [[nodiscard]] static bit_result
     add(FixedPointSemantics sema,
-        const BitSequence &lhs,
-        const BitSequence &rhs,
+        const bit::BitSequence &lhs,
+        const bit::BitSequence &rhs,
         RoundingMode roundingMode = RoundingMode::None)
     {
         assert(sema);
@@ -158,8 +162,8 @@ public:
     /// @pre    `rhs.size() == sema.getBitWidth()`
     [[nodiscard]] static bit_result
     sub(FixedPointSemantics sema,
-        const BitSequence &lhs,
-        const BitSequence &rhs,
+        const bit::BitSequence &lhs,
+        const bit::BitSequence &rhs,
         RoundingMode roundingMode = RoundingMode::None)
     {
         assert(sema);
@@ -181,8 +185,8 @@ public:
     /// @pre    `rhs.size() == sema.getBitWidth()`
     [[nodiscard]] static bit_result
     mul(FixedPointSemantics sema,
-        const BitSequence &lhs,
-        const BitSequence &rhs,
+        const bit::BitSequence &lhs,
+        const bit::BitSequence &rhs,
         RoundingMode roundingMode = RoundingMode::None)
     {
         if (const auto exact = mul(sema, lhs, sema, rhs))
@@ -197,8 +201,8 @@ public:
     /// @pre    `rhs.size() == sema.getBitWidth()`
     [[nodiscard]] static bit_result
     div(FixedPointSemantics sema,
-        const BitSequence &lhs,
-        const BitSequence &rhs,
+        const bit::BitSequence &lhs,
+        const bit::BitSequence &rhs,
         RoundingMode roundingMode = RoundingMode::None)
     {
         if (const auto exact = div(sema, lhs, sema, rhs))
@@ -214,8 +218,8 @@ public:
     /// @pre    `rhs.size() == sema.getBitWidth()`
     [[nodiscard]] static bit_result
     mod(FixedPointSemantics sema,
-        const BitSequence &lhs,
-        const BitSequence &rhs)
+        const bit::BitSequence &lhs,
+        const bit::BitSequence &rhs)
     {
         assert(sema);
         assert(lhs.size() == sema.getBitWidth());
@@ -244,9 +248,9 @@ public:
     /// @pre    `rhs.size() == lhsSema.getBitWidth()`
     static align_result promote(
         FixedPointSemantics lhsSema,
-        const BitSequence &lhs,
+        const bit::BitSequence &lhs,
         FixedPointSemantics rhsSema,
-        const BitSequence &rhs);
+        const bit::BitSequence &rhs);
 
     /// Obtains the result semantics of adding @p lhs to @p rhs , if any.
     ///
@@ -262,9 +266,9 @@ public:
     /// @pre    `rhs.size() == lhsSema.getBitWidth()`
     static auto_result
     add(FixedPointSemantics lhsSema,
-        const BitSequence &lhs,
+        const bit::BitSequence &lhs,
         FixedPointSemantics rhsSema,
-        const BitSequence &rhs);
+        const bit::BitSequence &rhs);
 
     /// Obtains the result semantics of subtracting @p rhs from @p lhs , if any.
     ///
@@ -280,9 +284,9 @@ public:
     /// @pre    `rhs.size() == lhsSema.getBitWidth()`
     static auto_result
     sub(FixedPointSemantics lhsSema,
-        const BitSequence &lhs,
+        const bit::BitSequence &lhs,
         FixedPointSemantics rhsSema,
-        const BitSequence &rhs);
+        const bit::BitSequence &rhs);
 
     /// Obtains the result semantics of multiplying @p lhs by @p rhs , if any.
     ///
@@ -298,9 +302,9 @@ public:
     /// @pre    `rhs.size() == lhsSema.getBitWidth()`
     static auto_result
     mul(FixedPointSemantics lhsSema,
-        const BitSequence &lhs,
+        const bit::BitSequence &lhs,
         FixedPointSemantics rhsSema,
-        const BitSequence &rhs);
+        const bit::BitSequence &rhs);
 
     /// Obtains the result semantics of dividing @p lhs by @p rhs , if any.
     ///
@@ -316,9 +320,9 @@ public:
     /// @pre    `rhs.size() == lhsSema.getBitWidth()`
     static auto_result
     div(FixedPointSemantics lhsSema,
-        const BitSequence &lhs,
+        const bit::BitSequence &lhs,
         FixedPointSemantics rhsSema,
-        const BitSequence &rhs);
+        const bit::BitSequence &rhs);
 };
 
 } // namespace mlir::base2
@@ -335,11 +339,11 @@ struct tuple_element<0, mlir::base2::FixedPointInterpreter::align_result> {
 };
 template<>
 struct tuple_element<1, mlir::base2::FixedPointInterpreter::align_result> {
-    using type = mlir::base2::BitSequence;
+    using type = mlir::bit::BitSequence;
 };
 template<>
 struct tuple_element<2, mlir::base2::FixedPointInterpreter::align_result> {
-    using type = mlir::base2::BitSequence;
+    using type = mlir::bit::BitSequence;
 };
 
 } // namespace std

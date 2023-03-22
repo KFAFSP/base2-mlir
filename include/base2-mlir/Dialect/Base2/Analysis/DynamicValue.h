@@ -6,8 +6,8 @@
 #pragma once
 
 #include "base2-mlir/Dialect/Base2/Analysis/BitInterpreter.h"
-#include "base2-mlir/Dialect/Base2/Analysis/BitSequence.h"
 #include "base2-mlir/Dialect/Base2/Analysis/ValueFacts.h"
+#include "base2-mlir/Dialect/Bit/Analysis/BitSequence.h"
 #include "mlir/IR/Value.h"
 
 #include <compare>
@@ -91,7 +91,7 @@ public:
     /// Initializes a DynamicValue bound to @p value with @p facts .
     /*implicit*/ DynamicValue(Value value, ValueFacts facts = ValueFacts::None);
     /// Initializes a DynamicValue bound to @p attr .
-    /*implicit*/ DynamicValue(BitSequenceLikeAttr attr);
+    /*implicit*/ DynamicValue(bit::BitSequenceLikeAttr attr);
 
     /// Gets the OpFoldResult binding.
     [[nodiscard]] OpFoldResult getBinding() const { return m_binding; }
@@ -108,17 +108,17 @@ public:
     /// Gets the BitSequenceLikeType.
     ///
     /// @pre    `isBound()`
-    [[nodiscard]] BitSequenceLikeType getType() const
+    [[nodiscard]] bit::BitSequenceLikeType getType() const
     {
         if (const auto variable = getVariable())
-            return variable.getType().cast<BitSequenceLikeType>();
+            return variable.getType().cast<bit::BitSequenceLikeType>();
 
         return getConstant().getType();
     }
     /// Gets the underlying BitSequenceType.
     ///
     /// @pre    `isBound()`
-    [[nodiscard]] BitSequenceType getElementType() const
+    [[nodiscard]] bit::BitSequenceType getElementType() const
     {
         return getType().getElementType();
     }
@@ -129,12 +129,12 @@ public:
         return getBinding().dyn_cast<Value>();
     }
     /// Gets the bound BitSequenceAttr, if any.
-    [[nodiscard]] BitSequenceLikeAttr getConstant() const
+    [[nodiscard]] bit::BitSequenceLikeAttr getConstant() const
     {
         if (const auto attr = getBinding().dyn_cast<Attribute>())
-            return attr.cast<BitSequenceLikeAttr>();
+            return attr.cast<bit::BitSequenceLikeAttr>();
 
-        return BitSequenceLikeAttr{};
+        return bit::BitSequenceLikeAttr{};
     }
 
     //===------------------------------------------------------------------===//

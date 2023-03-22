@@ -1,7 +1,6 @@
 /// Declaration of the Base2 dialect attributes.
 ///
 /// @file
-/// @author     Jihaong Bi (jiahong.bi@mailbox.tu-dresden.de)
 /// @author     Karl F. A. Friebel (karl.friebel@tu-dresden.de)
 
 #pragma once

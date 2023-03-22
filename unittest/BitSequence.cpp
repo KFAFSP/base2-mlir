@@ -1,11 +1,11 @@
-#include "base2-mlir/Dialect/Base2/Analysis/BitSequence.h"
+#include "base2-mlir/Dialect/Bit/Analysis/BitSequence.h"
 
 #include "llvm/ADT/StringExtras.h"
 
 #include <doctest/doctest.h>
 #include <iostream>
 
-using namespace mlir::base2;
+using namespace mlir::bit;
 
 // clang-format off
 

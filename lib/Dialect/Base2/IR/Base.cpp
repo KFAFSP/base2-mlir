@@ -7,6 +7,7 @@
 #include "base2-mlir/Dialect/Base2/IR/Base.h"
 
 #include "base2-mlir/Dialect/Base2/IR/Base2.h"
+#include "base2-mlir/Dialect/Bit/IR/Bit.h"
 #include "mlir/Transforms/InliningUtils.h"
 
 #include <memory>
@@ -44,9 +45,9 @@ Operation* Base2Dialect::materializeConstant(
     Location location)
 {
     // Materialize bit sequences using our constant op.
-    if (const auto impl = value.dyn_cast<BitSequenceLikeAttr>()) {
+    if (const auto impl = value.dyn_cast<bit::BitSequenceLikeAttr>()) {
         if (type != impl.getType()) return nullptr;
-        return builder.create<ConstantOp>(location, impl);
+        return builder.create<bit::ConstantOp>(location, impl);
     }
 
     return nullptr;
@@ -54,13 +55,10 @@ Operation* Base2Dialect::materializeConstant(
 
 void Base2Dialect::initialize()
 {
-    registerAttributes();
     registerOps();
     registerTypes();
 
     // Implement interfaces for built-in types.
-    registerBitSequenceAttrModels(*getContext());
-    registerBitSequenceTypeModels(*getContext());
     registerFixedPointSemanticsModels(*getContext());
     registerIEEE754SemanticsModels(*getContext());
     registerInterpretableTypeModels(*getContext());

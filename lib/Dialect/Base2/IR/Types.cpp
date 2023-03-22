@@ -36,7 +36,7 @@ using namespace mlir::base2;
 LogicalResult FixedPointType::verify(
     function_ref<InFlightDiagnostic()> emitError,
     IntegerType integerType,
-    bit_width_t fractionalBits)
+    bit::bit_width_t fractionalBits)
 {
     if (!integerType) return emitError() << "expected IntegerType";
 
@@ -52,8 +52,8 @@ LogicalResult FixedPointType::verify(
 LogicalResult FixedPointType::verify(
     function_ref<InFlightDiagnostic()> emitError,
     Signedness,
-    bit_width_t integerBits,
-    bit_width_t fractionalBits)
+    bit::bit_width_t integerBits,
+    bit::bit_width_t fractionalBits)
 {
     // Total bit width must fit into a standard integer type.
     const auto bitWidth = integerBits + fractionalBits;
@@ -121,7 +121,7 @@ Type FixedPointType::parse(AsmParser &parser)
 
 [[nodiscard]] static bit_result valueCastTo(
     FixedPointSemantics from,
-    const BitSequence &value,
+    const bit::BitSequence &value,
     InterpretableType to,
     RoundingMode roundingMode)
 {
@@ -155,7 +155,7 @@ Type FixedPointType::parse(AsmParser &parser)
 
 [[nodiscard]] static bit_result valueCastFrom(
     InterpretableType from,
-    const BitSequence &value,
+    const bit::BitSequence &value,
     FixedPointSemantics to,
     RoundingMode roundingMode)
 {
@@ -181,7 +181,7 @@ Type FixedPointType::parse(AsmParser &parser)
 
 bit_result FixedPointType::valueCast(
     InterpretableType from,
-    const BitSequence &value,
+    const bit::BitSequence &value,
     InterpretableType to,
     RoundingMode roundingMode) const
 {
@@ -194,51 +194,53 @@ bit_result FixedPointType::valueCast(
     return std::nullopt;
 }
 
-cmp_result
-FixedPointType::cmp(const BitSequence &lhs, const BitSequence &rhs) const
+cmp_result FixedPointType::cmp(
+    const bit::BitSequence &lhs,
+    const bit::BitSequence &rhs) const
 {
     return FixedPointInterpreter::cmp(*this, lhs, rhs);
 }
 
 bit_result FixedPointType::add(
-    const BitSequence &lhs,
-    const BitSequence &rhs,
+    const bit::BitSequence &lhs,
+    const bit::BitSequence &rhs,
     RoundingMode roundingMode) const
 {
     return FixedPointInterpreter::add(*this, lhs, rhs, roundingMode);
 }
 
 bit_result FixedPointType::sub(
-    const BitSequence &lhs,
-    const BitSequence &rhs,
+    const bit::BitSequence &lhs,
+    const bit::BitSequence &rhs,
     RoundingMode roundingMode) const
 {
     return FixedPointInterpreter::sub(*this, lhs, rhs, roundingMode);
 }
 
 bit_result FixedPointType::mul(
-    const BitSequence &lhs,
-    const BitSequence &rhs,
+    const bit::BitSequence &lhs,
+    const bit::BitSequence &rhs,
     RoundingMode roundingMode) const
 {
     return FixedPointInterpreter::mul(*this, lhs, rhs, roundingMode);
 }
 
 bit_result FixedPointType::div(
-    const BitSequence &lhs,
-    const BitSequence &rhs,
+    const bit::BitSequence &lhs,
+    const bit::BitSequence &rhs,
     RoundingMode roundingMode) const
 {
     return FixedPointInterpreter::div(*this, lhs, rhs, roundingMode);
 }
 
-bit_result
-FixedPointType::mod(const BitSequence &lhs, const BitSequence &rhs) const
+bit_result FixedPointType::mod(
+    const bit::BitSequence &lhs,
+    const bit::BitSequence &rhs) const
 {
     return FixedPointInterpreter::mod(*this, lhs, rhs);
 }
 
-ValueFacts FixedPointType::getFacts(const BitSequence &value) const
+ValueFacts FixedPointType::getFacts(const bit::BitSequence &value) const
 {
     return FixedPointInterpreter::getFacts(*this, value);
 }
@@ -249,8 +251,8 @@ ValueFacts FixedPointType::getFacts(const BitSequence &value) const
 
 LogicalResult IEEE754Type::verify(
     function_ref<InFlightDiagnostic()> emitError,
-    bit_width_t precision,
-    bit_width_t exponentBits,
+    bit::bit_width_t precision,
+    bit::bit_width_t exponentBits,
     exponent_t bias)
 {
     // Precision must be within limits.
@@ -302,7 +304,7 @@ Type IEEE754Type::parse(AsmParser &parser)
     if (parser.parseLess()) return Type{};
 
     // $precision `,` $exponentBits
-    bit_width_t precision, exponentBits;
+    bit::bit_width_t precision, exponentBits;
     if (parser.parseInteger(precision) || parser.parseComma()
         || parser.parseInteger(exponentBits))
         return Type{};

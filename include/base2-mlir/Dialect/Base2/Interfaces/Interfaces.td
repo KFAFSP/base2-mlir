@@ -8,8 +8,6 @@
 #define BASE2_INTERFACES
 
 include "base2-mlir/Dialect/Base2/Interfaces/ArithmeticOp.td"
-include "base2-mlir/Dialect/Base2/Interfaces/BitSequenceAttr.td"
-include "base2-mlir/Dialect/Base2/Interfaces/BitSequenceType.td"
 include "base2-mlir/Dialect/Base2/Interfaces/FixedPointSemantics.td"
 include "base2-mlir/Dialect/Base2/Interfaces/IEEE754Semantics.td"
 include "base2-mlir/Dialect/Base2/Interfaces/InterpretableType.td"

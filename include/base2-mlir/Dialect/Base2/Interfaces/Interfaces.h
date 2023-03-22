@@ -6,8 +6,6 @@
 #pragma once
 
 #include "base2-mlir/Dialect/Base2/Interfaces/ArithmeticOp.h"
-#include "base2-mlir/Dialect/Base2/Interfaces/BitSequenceAttr.h"
-#include "base2-mlir/Dialect/Base2/Interfaces/BitSequenceType.h"
 #include "base2-mlir/Dialect/Base2/Interfaces/FixedPointSemantics.h"
 #include "base2-mlir/Dialect/Base2/Interfaces/IEEE754Semantics.h"
 #include "base2-mlir/Dialect/Base2/Interfaces/InterpretableType.h"

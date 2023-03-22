@@ -21,7 +21,7 @@ static llvm::raw_ostream &write(llvm::raw_ostream &out, bool value)
 }
 /// Writes @p opt to @p out .
 static llvm::raw_ostream &
-write(llvm::raw_ostream &out, const std::optional<BitSequence> &opt)
+write(llvm::raw_ostream &out, const std::optional<bit::BitSequence> &opt)
 {
     if (!opt) return out << "{}";
     return out << *opt;
@@ -93,7 +93,7 @@ bool BitInterpreter::canValueCast(InterpretableType from, InterpretableType to)
 
 bit_result BitInterpreter::valueCast(
     InterpretableType from,
-    const BitSequence &value,
+    const bit::BitSequence &value,
     InterpretableType to,
     RoundingMode roundingMode)
 {
@@ -112,8 +112,8 @@ bit_result BitInterpreter::valueCast(
 
 cmp_result BitInterpreter::cmp(
     InterpretableType type,
-    const BitSequence &lhs,
-    const BitSequence &rhs)
+    const bit::BitSequence &lhs,
+    const bit::BitSequence &rhs)
 {
     assert(type);
     assert(lhs.size() == type.getBitWidth());
@@ -124,8 +124,8 @@ cmp_result BitInterpreter::cmp(
 
 bit_result BitInterpreter::min(
     InterpretableType type,
-    const BitSequence &lhs,
-    const BitSequence &rhs)
+    const bit::BitSequence &lhs,
+    const bit::BitSequence &rhs)
 {
     assert(type);
     assert(lhs.size() == type.getBitWidth());
@@ -136,8 +136,8 @@ bit_result BitInterpreter::min(
 
 bit_result BitInterpreter::max(
     InterpretableType type,
-    const BitSequence &lhs,
-    const BitSequence &rhs)
+    const bit::BitSequence &lhs,
+    const bit::BitSequence &rhs)
 {
     assert(type);
     assert(lhs.size() == type.getBitWidth());
@@ -148,8 +148,8 @@ bit_result BitInterpreter::max(
 
 bit_result BitInterpreter::add(
     InterpretableType type,
-    const BitSequence &lhs,
-    const BitSequence &rhs,
+    const bit::BitSequence &lhs,
+    const bit::BitSequence &rhs,
     RoundingMode roundingMode)
 {
     assert(type);
@@ -161,8 +161,8 @@ bit_result BitInterpreter::add(
 
 bit_result BitInterpreter::sub(
     InterpretableType type,
-    const BitSequence &lhs,
-    const BitSequence &rhs,
+    const bit::BitSequence &lhs,
+    const bit::BitSequence &rhs,
     RoundingMode roundingMode)
 {
     assert(type);
@@ -174,8 +174,8 @@ bit_result BitInterpreter::sub(
 
 bit_result BitInterpreter::mul(
     InterpretableType type,
-    const BitSequence &lhs,
-    const BitSequence &rhs,
+    const bit::BitSequence &lhs,
+    const bit::BitSequence &rhs,
     RoundingMode roundingMode)
 {
     assert(type);
@@ -187,8 +187,8 @@ bit_result BitInterpreter::mul(
 
 bit_result BitInterpreter::div(
     InterpretableType type,
-    const BitSequence &lhs,
-    const BitSequence &rhs,
+    const bit::BitSequence &lhs,
+    const bit::BitSequence &rhs,
     RoundingMode roundingMode)
 {
     assert(type);
@@ -200,8 +200,8 @@ bit_result BitInterpreter::div(
 
 bit_result BitInterpreter::mod(
     InterpretableType type,
-    const BitSequence &lhs,
-    const BitSequence &rhs)
+    const bit::BitSequence &lhs,
+    const bit::BitSequence &rhs)
 {
     assert(type);
     assert(lhs.size() == type.getBitWidth());
@@ -211,7 +211,7 @@ bit_result BitInterpreter::mod(
 }
 
 ValueFacts
-BitInterpreter::getFacts(InterpretableType type, const BitSequence &value)
+BitInterpreter::getFacts(InterpretableType type, const bit::BitSequence &value)
 {
     assert(type);
     assert(value.size() == type.getBitWidth());
@@ -219,16 +219,16 @@ BitInterpreter::getFacts(InterpretableType type, const BitSequence &value)
     return TRACE(getFacts, type, value);
 }
 
-ValueFacts BitInterpreter::getFacts(BitSequenceLikeAttr attr)
+ValueFacts BitInterpreter::getFacts(bit::BitSequenceLikeAttr attr)
 {
     if (!attr) return ValueFacts::None;
     const auto impl = attr.getElementType().dyn_cast<InterpretableType>();
     if (!impl) return ValueFacts::None;
 
-    if (const auto single = attr.dyn_cast<BitSequenceAttr>())
+    if (const auto single = attr.dyn_cast<bit::BitSequenceAttr>())
         return getFacts(impl, single.getValue());
 
-    const auto dense = attr.cast<DenseBitSequencesAttr>();
+    const auto dense = attr.cast<bit::DenseBitSequencesAttr>();
     if (dense.isSplat()) return getFacts(impl, dense.getSplatValue());
     if (dense.empty()) return ValueFacts::None;
     return std::accumulate(

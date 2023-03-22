@@ -69,8 +69,8 @@ IEEE754Semantics::getBuiltinType(MLIRContext* ctx, APFloat::Semantics llvmSema)
 
 IEEE754Semantics IEEE754Semantics::get(
     MLIRContext* ctx,
-    bit_width_t precision,
-    bit_width_t exponentBits,
+    bit::bit_width_t precision,
+    bit::bit_width_t exponentBits,
     exponent_t bias)
 {
     // NOTE: Returning a FloatType is of debatable use and unexpected.
@@ -85,7 +85,7 @@ IEEE754Semantics IEEE754Semantics::parse(MLIRContext* ctx, StringRef str)
     if (!str.consume_front("f")) return IEEE754Semantics{};
 
     // [0-9]+ `_` [0-9]+
-    bit_width_t precision, exponentBits;
+    bit::bit_width_t precision, exponentBits;
     if (str.consumeInteger(10, precision)) return IEEE754Semantics{};
     if (!str.consume_front("_")) return IEEE754Semantics{};
     if (str.consumeInteger(10, exponentBits)) return IEEE754Semantics{};
@@ -151,12 +151,12 @@ namespace {
 
 template<class Float>
 struct FloatModel : IEEE754Semantics::ExternalModel<FloatModel<Float>, Float> {
-    static bit_width_t getPrecision(Type type)
+    static bit::bit_width_t getPrecision(Type type)
     {
         const auto &llvmSema = type.cast<FloatType>().getFloatSemantics();
         return APFloat::semanticsPrecision(llvmSema);
     }
-    static bit_width_t getExponentBits(Type type)
+    static bit::bit_width_t getExponentBits(Type type)
     {
         const auto &llvmSema = type.cast<FloatType>().getFloatSemantics();
         return APFloat::semanticsSizeInBits(llvmSema)

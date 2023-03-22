@@ -7,7 +7,7 @@
 
 #include "base2-mlir/Dialect/Base2/Analysis/ValueFacts.h"
 #include "base2-mlir/Dialect/Base2/Enums.h"
-#include "base2-mlir/Dialect/Base2/Interfaces/BitSequenceType.h"
+#include "base2-mlir/Dialect/Bit/Interfaces/BitSequenceType.h"
 #include "mlir/IR/OpDefinition.h"
 
 #include <cassert>
@@ -16,8 +16,8 @@
 
 namespace mlir::base2 {
 
-/// Optional BitSequence result type.
-using bit_result = std::optional<BitSequence>;
+/// Optional bit::BitSequence result type.
+using bit_result = std::optional<bit::BitSequence>;
 /// Optional std::partial_ordering result type.
 using cmp_result = std::optional<std::partial_ordering>;
 
@@ -29,16 +29,16 @@ namespace mlir::base2::interpretable_type_interface_defaults {
 [[nodiscard]] bool canValueCast(Type self, Type from, Type to);
 
 /// Compares and selects using cmp.
-[[nodiscard]] std::optional<BitSequence>
-min(Type self, const BitSequence &lhs, const BitSequence &rhs);
+[[nodiscard]] std::optional<bit::BitSequence>
+min(Type self, const bit::BitSequence &lhs, const bit::BitSequence &rhs);
 
 /// Compares and selects using cmp.
-[[nodiscard]] std::optional<BitSequence>
-max(Type self, const BitSequence &lhs, const BitSequence &rhs);
+[[nodiscard]] std::optional<bit::BitSequence>
+max(Type self, const bit::BitSequence &lhs, const bit::BitSequence &rhs);
 
 /// Checks trivial equality.
 [[nodiscard]] std::optional<std::partial_ordering>
-cmp(Type self, const BitSequence &lhs, const BitSequence &rhs);
+cmp(Type self, const bit::BitSequence &lhs, const bit::BitSequence &rhs);
 
 } // namespace mlir::base2::interpretable_type_interface_defaults
 

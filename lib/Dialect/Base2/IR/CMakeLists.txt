@@ -14,4 +14,5 @@ add_mlir_dialect_library(Base2Dialect
         Base2Analysis
         Base2Enums
         Base2Interfaces
+        BitDialect
 )

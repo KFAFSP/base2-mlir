@@ -19,8 +19,8 @@ class Base2_InterpretMethod<string name>
             /*retTy=*/"bit_result",
             /*methodName=*/name,
             /*args=*/(ins
-                "const BitSequence &":$lhs,
-                "const BitSequence &":$rhs,
+                "const bit::BitSequence &":$lhs,
+                "const bit::BitSequence &":$rhs,
                 "RoundingMode":$roundingMode),
             /*methodBody=*/"",
             /*defaultImplementation=*/"return std::nullopt;">;
@@ -52,7 +52,7 @@ def Base2_InterpretableType : TypeInterface<"InterpretableType"> {
             /*methodName=*/"valueCast",
             /*args=*/(ins
                 "InterpretableType":$from,
-                "const BitSequence &":$value,
+                "const bit::BitSequence &":$value,
                 "InterpretableType":$to,
                 "RoundingMode":$roundingMode),
             /*methodBody=*/"",
@@ -62,8 +62,8 @@ def Base2_InterpretableType : TypeInterface<"InterpretableType"> {
             /*retTy=*/"cmp_result",
             /*methodName=*/"cmp",
             /*args=*/(ins
-                "const BitSequence &":$lhs,
-                "const BitSequence &":$rhs),
+                "const bit::BitSequence &":$lhs,
+                "const bit::BitSequence &":$rhs),
             /*methodBody=*/"",
             /*defaultImplementation=*/[{
                 return interpretable_type_interface_defaults::cmp(
@@ -76,8 +76,8 @@ def Base2_InterpretableType : TypeInterface<"InterpretableType"> {
             /*retTy=*/"bit_result",
             /*methodName=*/"min",
             /*args=*/(ins
-                "const BitSequence &":$lhs,
-                "const BitSequence &":$rhs),
+                "const bit::BitSequence &":$lhs,
+                "const bit::BitSequence &":$rhs),
             /*methodBody=*/"",
             /*defaultImplementation=*/[{
                 return interpretable_type_interface_defaults::min(
@@ -90,8 +90,8 @@ def Base2_InterpretableType : TypeInterface<"InterpretableType"> {
             /*retTy=*/"bit_result",
             /*methodName=*/"max",
             /*args=*/(ins
-                "const BitSequence &":$lhs,
-                "const BitSequence &":$rhs),
+                "const bit::BitSequence &":$lhs,
+                "const bit::BitSequence &":$rhs),
             /*methodBody=*/"",
             /*defaultImplementation=*/[{
                 return interpretable_type_interface_defaults::max(
@@ -108,24 +108,24 @@ def Base2_InterpretableType : TypeInterface<"InterpretableType"> {
             /*retTy=*/"bit_result",
             /*methodName=*/"mod",
             /*args=*/(ins
-                "const BitSequence &":$lhs,
-                "const BitSequence &":$rhs),
+                "const bit::BitSequence &":$lhs,
+                "const bit::BitSequence &":$rhs),
             /*methodBody=*/"",
             /*defaultImplementation=*/"return std::nullopt;">,
         InterfaceMethod<
             /*desc=*/"Gets ValueFacts for a constant bit sequence.",
             /*retTy=*/"ValueFacts",
             /*methodName=*/"getFacts",
-            /*args=*/(ins "const BitSequence &":$value),
+            /*args=*/(ins "const bit::BitSequence &":$value),
             /*methodBody=*/"",
             /*defaultImplementation=*/"return ValueFacts::None;">];
 
     code extraClassDeclaration = [{
     public:
         /// Gets the bit sequence length.
-        [[nodiscard]] bit_width_t getBitWidth() const
+        [[nodiscard]] bit::bit_width_t getBitWidth() const
         {
-            return cast<BitSequenceType>().getBitWidth();
+            return cast<bit::BitSequenceType>().getBitWidth();
         }
     }];
 }

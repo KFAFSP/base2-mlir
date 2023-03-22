@@ -1,22 +1,22 @@
-/// Declares the Base2 BitSequenceType interface.
+/// Declares the Bit BitSequenceType interface.
 ///
 /// @file
 /// @author     Karl F. A. Friebel (karl.friebel@tu-dresden.de)
 
 #pragma once
 
-#include "base2-mlir/Dialect/Base2/Analysis/BitSequence.h"
+#include "base2-mlir/Dialect/Bit/Analysis/BitSequence.h"
 #include "mlir/IR/OpDefinition.h"
 
 #include <cassert>
 
 //===- Generated includes -------------------------------------------------===//
 
-#include "base2-mlir/Dialect/Base2/Interfaces/BitSequenceType.h.inc"
+#include "base2-mlir/Dialect/Bit/Interfaces/BitSequenceType.h.inc"
 
 //===----------------------------------------------------------------------===//
 
-namespace mlir::base2 {
+namespace mlir::bit {
 
 //===----------------------------------------------------------------------===//
 // BitSequenceLikeType
@@ -83,4 +83,4 @@ public:
 /// Implements the BitSequenceType interface for built-in types.
 void registerBitSequenceTypeModels(MLIRContext &ctx);
 
-} // namespace mlir::base2
+} // namespace mlir::bit

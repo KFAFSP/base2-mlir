@@ -5,8 +5,8 @@
 
 #pragma once
 
-#include "base2-mlir/Dialect/Base2/Interfaces/BitSequenceAttr.h"
-#include "base2-mlir/Dialect/Base2/Interfaces/BitSequenceType.h"
+#include "base2-mlir/Dialect/Bit/Interfaces/BitSequenceAttr.h"
+#include "base2-mlir/Dialect/Bit/Interfaces/BitSequenceType.h"
 
 #include "llvm/ADT/BitmaskEnum.h"
 #include "llvm/Support/raw_ostream.h"

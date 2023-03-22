@@ -26,7 +26,7 @@ def Base2_FixedPointSemantics : TypeInterface<"FixedPointSemantics"> {
             /*defaultImplementation=*/"">,
         InterfaceMethod<
             /*desc=*/"Gets the number of fractional bits.",
-            /*retTy=*/"bit_width_t",
+            /*retTy=*/"bit::bit_width_t",
             /*methodName=*/"getFractionalBits",
             /*args=*/(ins),
             /*methodBody=*/"",
@@ -57,12 +57,12 @@ def Base2_FixedPointSemantics : TypeInterface<"FixedPointSemantics"> {
         }
 
         /// Gets the total number of bits.
-        [[nodiscard]] bit_width_t getBitWidth() const
+        [[nodiscard]] bit::bit_width_t getBitWidth() const
         {
             return $_type.getIntegerType().getWidth();
         }
         /// Gets the number of integer bits.
-        [[nodiscard]] bit_width_t getIntegerBits() const
+        [[nodiscard]] bit::bit_width_t getIntegerBits() const
         {
             return $_type.getBitWidth() - $_type.getFractionalBits();
         }
@@ -92,12 +92,12 @@ def Base2_FixedPointSemantics : TypeInterface<"FixedPointSemantics"> {
         }
 
         /// Gets the total number of bits.
-        [[nodiscard]] bit_width_t getBitWidth() const
+        [[nodiscard]] bit::bit_width_t getBitWidth() const
         {
             return getIntegerType().getWidth();
         }
         /// Gets the number of integer bits.
-        [[nodiscard]] bit_width_t getIntegerBits() const
+        [[nodiscard]] bit::bit_width_t getIntegerBits() const
         {
             return getBitWidth() - getFractionalBits();
         }
@@ -107,9 +107,9 @@ def Base2_FixedPointSemantics : TypeInterface<"FixedPointSemantics"> {
         //===--------------------------------------------------------------===//
 
         /// Obtains the BitSequence representing zero.
-        BitSequence getZero() const
+        bit::BitSequence getZero() const
         {
-            return BitSequence::zeros(getBitWidth());
+            return bit::BitSequence::zeros(getBitWidth());
         }
         /// Obtains the BitSequence representing the smallest value, if any.
         [[nodiscard]] bit_result getMin() const
@@ -160,7 +160,7 @@ def Base2_FixedPointSemantics : TypeInterface<"FixedPointSemantics"> {
         /// @pre    `fractionalBits <= integerType.getWidth()`
         [[nodiscard]] static FixedPointSemantics get(
             IntegerType integerType,
-            bit_width_t fractionalBits = 0);
+            bit::bit_width_t fractionalBits = 0);
         /// Builds a canonical FixedPointSemantics type.
         ///
         /// @pre    `ctx`
@@ -168,8 +168,8 @@ def Base2_FixedPointSemantics : TypeInterface<"FixedPointSemantics"> {
         [[nodiscard]] static FixedPointSemantics get(
             MLIRContext *ctx,
             Signedness signedness,
-            bit_width_t integerBits,
-            bit_width_t fractionalBits = 0)
+            bit::bit_width_t integerBits,
+            bit::bit_width_t fractionalBits = 0)
         {
             return get(
                 IntegerType::get(

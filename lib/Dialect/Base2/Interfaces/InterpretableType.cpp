@@ -25,16 +25,16 @@ bool interpretable_type_interface_defaults::canValueCast(
     return impl
         .valueCast(
             fromImpl,
-            BitSequence::zeros(fromImpl.getBitWidth()),
+            bit::BitSequence::zeros(fromImpl.getBitWidth()),
             toImpl,
             RoundingMode::None)
         .has_value();
 }
 
-std::optional<BitSequence> interpretable_type_interface_defaults::min(
+std::optional<bit::BitSequence> interpretable_type_interface_defaults::min(
     Type self,
-    const BitSequence &lhs,
-    const BitSequence &rhs)
+    const bit::BitSequence &lhs,
+    const bit::BitSequence &rhs)
 {
     const auto impl = self.cast<InterpretableType>();
     if (const auto cmp = impl.cmp(lhs, rhs)) {
@@ -45,10 +45,10 @@ std::optional<BitSequence> interpretable_type_interface_defaults::min(
     return std::nullopt;
 }
 
-std::optional<BitSequence> interpretable_type_interface_defaults::max(
+std::optional<bit::BitSequence> interpretable_type_interface_defaults::max(
     Type self,
-    const BitSequence &lhs,
-    const BitSequence &rhs)
+    const bit::BitSequence &lhs,
+    const bit::BitSequence &rhs)
 {
     const auto impl = self.cast<InterpretableType>();
     if (const auto cmp = impl.cmp(lhs, rhs)) {
@@ -61,8 +61,8 @@ std::optional<BitSequence> interpretable_type_interface_defaults::max(
 
 std::optional<std::partial_ordering> interpretable_type_interface_defaults::cmp(
     Type,
-    const BitSequence &lhs,
-    const BitSequence &rhs)
+    const bit::BitSequence &lhs,
+    const bit::BitSequence &rhs)
 {
     if (lhs == rhs) return std::partial_ordering::equivalent;
     return std::nullopt;
@@ -82,11 +82,11 @@ namespace {
 
 template<class Float>
 struct FloatModel : InterpretableType::ExternalModel<FloatModel<Float>, Float> {
-    static APFloat interpret(FloatType as, const BitSequence &value)
+    static APFloat interpret(FloatType as, const bit::BitSequence &value)
     {
         return APFloat(as.getFloatSemantics(), value.asUInt());
     }
-    static APFloat interpret(Type as, const BitSequence &value)
+    static APFloat interpret(Type as, const bit::BitSequence &value)
     {
         return interpret(as.cast<FloatType>(), value);
     }
@@ -115,7 +115,7 @@ struct FloatModel : InterpretableType::ExternalModel<FloatModel<Float>, Float> {
     }
     static bit_result valueCastFrom(
         InterpretableType from,
-        const BitSequence &value,
+        const bit::BitSequence &value,
         FloatType to,
         llvm::RoundingMode roundingMode)
     {
@@ -135,7 +135,7 @@ struct FloatModel : InterpretableType::ExternalModel<FloatModel<Float>, Float> {
     static bit_result valueCast(
         Type,
         InterpretableType from,
-        const BitSequence &value,
+        const bit::BitSequence &value,
         InterpretableType to,
         RoundingMode roundingMode)
     {
@@ -153,7 +153,7 @@ struct FloatModel : InterpretableType::ExternalModel<FloatModel<Float>, Float> {
     }
 
     static cmp_result
-    cmp(Type self, const BitSequence &lhs, const BitSequence &rhs)
+    cmp(Type self, const bit::BitSequence &lhs, const bit::BitSequence &rhs)
     {
         const auto lhsVal = interpret(self, lhs);
         const auto rhsVal = interpret(self, rhs);
@@ -167,7 +167,7 @@ struct FloatModel : InterpretableType::ExternalModel<FloatModel<Float>, Float> {
     }
 
     static bit_result
-    min(Type self, const BitSequence &lhs, const BitSequence &rhs)
+    min(Type self, const bit::BitSequence &lhs, const bit::BitSequence &rhs)
     {
         const auto lhsVal = interpret(self, lhs);
         const auto rhsVal = interpret(self, rhs);
@@ -179,7 +179,7 @@ struct FloatModel : InterpretableType::ExternalModel<FloatModel<Float>, Float> {
     }
 
     static bit_result
-    max(Type self, const BitSequence &lhs, const BitSequence &rhs)
+    max(Type self, const bit::BitSequence &lhs, const bit::BitSequence &rhs)
     {
         const auto lhsVal = interpret(self, lhs);
         const auto rhsVal = interpret(self, rhs);
@@ -193,8 +193,8 @@ struct FloatModel : InterpretableType::ExternalModel<FloatModel<Float>, Float> {
 #define CLOSED_OP(op, call)                                                    \
     static bit_result op(                                                      \
         Type self,                                                             \
-        const BitSequence &lhs,                                                \
-        const BitSequence &rhs,                                                \
+        const bit::BitSequence &lhs,                                           \
+        const bit::BitSequence &rhs,                                           \
         RoundingMode roundingMode)                                             \
     {                                                                          \
         const auto llvmRM = getLLVMRoundingMode(roundingMode);                 \
@@ -215,7 +215,7 @@ struct FloatModel : InterpretableType::ExternalModel<FloatModel<Float>, Float> {
 #undef CLOSED_OP
 
     static bit_result
-    mod(Type self, const BitSequence &lhs, const BitSequence &rhs)
+    mod(Type self, const bit::BitSequence &lhs, const bit::BitSequence &rhs)
     {
         auto lhsVal = interpret(self, lhs);
         const auto rhsVal = interpret(self, rhs);
@@ -224,7 +224,7 @@ struct FloatModel : InterpretableType::ExternalModel<FloatModel<Float>, Float> {
         return lhsVal;
     }
 
-    static ValueFacts getFacts(Type self, const BitSequence &value)
+    static ValueFacts getFacts(Type self, const bit::BitSequence &value)
     {
         const auto fltVal = interpret(self, value);
         auto facts = ValueFacts::None;
@@ -262,7 +262,7 @@ struct IntModel : InterpretableType::ExternalModel<IntModel, IntegerType> {
     static bit_result valueCast(
         Type,
         InterpretableType from,
-        const BitSequence &value,
+        const bit::BitSequence &value,
         InterpretableType to,
         RoundingMode roundingMode)
     {
@@ -281,7 +281,7 @@ struct IntModel : InterpretableType::ExternalModel<IntModel, IntegerType> {
     }
 
     static cmp_result
-    cmp(Type self, const BitSequence &lhs, const BitSequence &rhs)
+    cmp(Type self, const bit::BitSequence &lhs, const bit::BitSequence &rhs)
     {
         const auto selfImpl = self.cast<IntegerType>();
         if (selfImpl.isSignless()) return std::nullopt;
@@ -295,8 +295,8 @@ struct IntModel : InterpretableType::ExternalModel<IntModel, IntegerType> {
 #define CLOSED_OP(op)                                                          \
     static bit_result op(                                                      \
         Type self,                                                             \
-        const BitSequence &lhs,                                                \
-        const BitSequence &rhs,                                                \
+        const bit::BitSequence &lhs,                                           \
+        const bit::BitSequence &rhs,                                           \
         RoundingMode roundingMode)                                             \
     {                                                                          \
         const auto selfImpl = self.cast<IntegerType>();                        \
@@ -318,7 +318,7 @@ struct IntModel : InterpretableType::ExternalModel<IntModel, IntegerType> {
 #undef CLOSED_OP
 
     static bit_result
-    mod(Type self, const BitSequence &lhs, const BitSequence &rhs)
+    mod(Type self, const bit::BitSequence &lhs, const bit::BitSequence &rhs)
     {
         const auto selfImpl = self.cast<IntegerType>();
         if (selfImpl.isSignless()) return std::nullopt;
@@ -327,7 +327,7 @@ struct IntModel : InterpretableType::ExternalModel<IntModel, IntegerType> {
                                    : lhs.asUInt().urem(rhs.asUInt());
     }
 
-    static ValueFacts getFacts(Type self, const BitSequence &value)
+    static ValueFacts getFacts(Type self, const bit::BitSequence &value)
     {
         const auto selfImpl = self.cast<IntegerType>();
 

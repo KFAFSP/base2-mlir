@@ -1,11 +1,11 @@
-/// Implements the Base2 dialect BitSequenceAttr interface.
+/// Implements the Bit dialect BitSequenceAttr interface.
 ///
 /// @file
 /// @author     Karl F. A. Friebel (karl.friebel@tu-dresden.de)
 
-#include "base2-mlir/Dialect/Base2/Interfaces/BitSequenceAttr.h"
+#include "base2-mlir/Dialect/Bit/Interfaces/BitSequenceAttr.h"
 
-#include "base2-mlir/Dialect/Base2/IR/Base2.h"
+#include "base2-mlir/Dialect/Bit/IR/Bit.h"
 
 #include "llvm/ADT/TypeSwitch.h"
 
@@ -13,11 +13,11 @@
 #include <numeric>
 
 using namespace mlir;
-using namespace mlir::base2;
+using namespace mlir::bit;
 
 //===- Generated implementation -------------------------------------------===//
 
-#include "base2-mlir/Dialect/Base2/Interfaces/BitSequenceAttr.cpp.inc"
+#include "base2-mlir/Dialect/Bit/Interfaces/BitSequenceAttr.cpp.inc"
 
 //===----------------------------------------------------------------------===//
 
@@ -307,7 +307,7 @@ struct IntModel : BitSequenceAttr::ExternalModel<IntModel, IntegerAttr> {
 
 } // namespace
 
-void base2::registerBitSequenceAttrModels(MLIRContext &ctx)
+void bit::registerBitSequenceAttrModels(MLIRContext &ctx)
 {
     FloatAttr::attachInterface<FloatModel>(ctx);
 

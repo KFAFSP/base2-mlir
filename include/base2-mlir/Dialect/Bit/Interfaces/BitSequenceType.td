@@ -1,11 +1,11 @@
 //===- BitSequenceType.td ----------------------------------*- tablegen -*-===//
 //
-// This is the definitions file for the Base2 BitSequenceType interface.
+// This is the definitions file for the Bit BitSequenceType interface.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef BASE2_BITSEQUENCETYPE
-#define BASE2_BITSEQUENCETYPE
+#ifndef BIT_BITSEQUENCETYPE
+#define BIT_BITSEQUENCETYPE
 
 include "mlir/IR/OpBase.td"
 
@@ -13,8 +13,8 @@ include "mlir/IR/OpBase.td"
 // BitSequenceType
 //===----------------------------------------------------------------------===//
 
-def Base2_BitSequenceType : TypeInterface<"BitSequenceType"> {
-    let cppNamespace = "::mlir::base2";
+def Bit_BitSequenceType : TypeInterface<"BitSequenceType"> {
+    let cppNamespace = "::mlir::bit";
 
     let description = [{
         Interface for a type that is represented by a bit sequence with a fixed
@@ -35,10 +35,10 @@ def Base2_BitSequenceType : TypeInterface<"BitSequenceType"> {
 // BitSequenceLike
 //===----------------------------------------------------------------------===//
 
-def Base2_BitSequenceLike
+def Bit_BitSequenceLike
         : TypeConstraint<
-            /*predicate=*/CPred<"$_self.isa<::mlir::base2::BitSequenceLikeType>()">,
+            /*predicate=*/CPred<"$_self.isa<::mlir::bit::BitSequenceLikeType>()">,
             /*summary=*/"Type or container of BitSequenceType",
-            /*cppClassName=*/"::mlir::base2::BitSequenceLikeType">;
+            /*cppClassName=*/"::mlir::bit::BitSequenceLikeType">;
 
 #endif

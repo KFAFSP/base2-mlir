@@ -5,10 +5,10 @@
 
 #pragma once
 
-#include "base2-mlir/Dialect/Base2/Analysis/BitSequence.h"
 #include "base2-mlir/Dialect/Base2/Enums.h"
-#include "base2-mlir/Dialect/Base2/Interfaces/BitSequenceAttr.h"
 #include "base2-mlir/Dialect/Base2/Interfaces/InterpretableType.h"
+#include "base2-mlir/Dialect/Bit/Analysis/BitSequence.h"
+#include "base2-mlir/Dialect/Bit/Interfaces/BitSequenceAttr.h"
 
 #include <compare>
 #include <optional>
@@ -35,27 +35,27 @@ class BitInterpreter {
 
         return result_type{};
     }
-    static BitSequenceLikeAttr
+    static bit::BitSequenceLikeAttr
     tryInterpret(auto fn, Attribute lhs, Attribute rhs, auto &&... args)
     {
-        const auto lhsBits = lhs.dyn_cast_or_null<BitSequenceLikeAttr>();
-        const auto rhsBits = rhs.dyn_cast_or_null<BitSequenceLikeAttr>();
+        const auto lhsBits = lhs.dyn_cast_or_null<bit::BitSequenceLikeAttr>();
+        const auto rhsBits = rhs.dyn_cast_or_null<bit::BitSequenceLikeAttr>();
         if (lhsBits && rhsBits)
             return fn(lhsBits, rhsBits, std::forward<decltype(args)>(args)...);
 
-        return BitSequenceLikeAttr{};
+        return bit::BitSequenceLikeAttr{};
     }
 
-    [[nodiscard]] static BitSequenceLikeAttr tryInterpretBinary(
+    [[nodiscard]] static bit::BitSequenceLikeAttr tryInterpretBinary(
         auto fn,
-        BitSequenceLikeAttr lhs,
-        BitSequenceLikeAttr rhs,
+        bit::BitSequenceLikeAttr lhs,
+        bit::BitSequenceLikeAttr rhs,
         auto... args)
     {
-        if (!lhs || !rhs) return BitSequenceLikeAttr{};
+        if (!lhs || !rhs) return bit::BitSequenceLikeAttr{};
         const auto impl = lhs.getElementType().dyn_cast<InterpretableType>();
-        if (!impl) return BitSequenceLikeAttr{};
-        if (rhs.getElementType() != impl) return BitSequenceLikeAttr{};
+        if (!impl) return bit::BitSequenceLikeAttr{};
+        if (rhs.getElementType() != impl) return bit::BitSequenceLikeAttr{};
 
         return lhs.zip(
             [&](const auto &l, const auto &r) {
@@ -95,12 +95,12 @@ public:
     /// @pre    `value.size() == from.getBitWidth()`
     [[nodiscard]] static bit_result valueCast(
         InterpretableType from,
-        const BitSequence &value,
+        const bit::BitSequence &value,
         InterpretableType to,
         RoundingMode roundingMode = RoundingMode::None);
     [[nodiscard]] static bit_result valueCast(
         Type from,
-        const BitSequence &value,
+        const bit::BitSequence &value,
         Type to,
         RoundingMode roundingMode = RoundingMode::None)
     {
@@ -111,30 +111,30 @@ public:
 
         return std::nullopt;
     }
-    [[nodiscard]] static BitSequenceLikeAttr valueCast(
-        BitSequenceLikeAttr from,
+    [[nodiscard]] static bit::BitSequenceLikeAttr valueCast(
+        bit::BitSequenceLikeAttr from,
         InterpretableType to,
         RoundingMode roundingMode = RoundingMode::None)
     {
-        if (!from) return BitSequenceLikeAttr{};
+        if (!from) return bit::BitSequenceLikeAttr{};
         const auto impl = from.getElementType().dyn_cast<InterpretableType>();
-        if (!impl) return BitSequenceLikeAttr{};
+        if (!impl) return bit::BitSequenceLikeAttr{};
 
         return from.map(
             [&](const auto &l) { return valueCast(impl, l, to, roundingMode); },
-            to.cast<BitSequenceType>());
+            to.cast<bit::BitSequenceType>());
     }
-    [[nodiscard]] static BitSequenceLikeAttr valueCast(
+    [[nodiscard]] static bit::BitSequenceLikeAttr valueCast(
         Attribute from,
         Type to,
         RoundingMode roundingMode = RoundingMode::None)
     {
-        const auto fromBits = from.dyn_cast_or_null<BitSequenceLikeAttr>();
+        const auto fromBits = from.dyn_cast_or_null<bit::BitSequenceLikeAttr>();
         const auto toImpl = to.dyn_cast<InterpretableLikeType>();
         if (fromBits && toImpl)
             return valueCast(fromBits, toImpl.getElementType(), roundingMode);
 
-        return BitSequenceLikeAttr{};
+        return bit::BitSequenceLikeAttr{};
     }
 
     //===------------------------------------------------------------------===//
@@ -147,62 +147,66 @@ public:
     /// @pre    `lhs.size() == type.getBitWidth()`
     /// @pre    `rhs.size() == type.getBitWidth()`
     [[nodiscard]] static cmp_result
-    cmp(InterpretableType type, const BitSequence &lhs, const BitSequence &rhs);
+    cmp(InterpretableType type,
+        const bit::BitSequence &lhs,
+        const bit::BitSequence &rhs);
     [[nodiscard]] static cmp_result
-    cmp(Type type, const BitSequence &lhs, const BitSequence &rhs)
+    cmp(Type type, const bit::BitSequence &lhs, const bit::BitSequence &rhs)
     {
         return tryInterpret(DELEGATE(cmp), type, lhs, rhs);
     }
-    [[nodiscard]] static BitSequenceLikeAttr
+    [[nodiscard]] static bit::BitSequenceLikeAttr
     cmp(PartialOrderingPredicate pred,
-        BitSequenceLikeAttr lhs,
-        BitSequenceLikeAttr rhs)
+        bit::BitSequenceLikeAttr lhs,
+        bit::BitSequenceLikeAttr rhs)
     {
-        if (!lhs || !rhs) return BitSequenceLikeAttr{};
+        if (!lhs || !rhs) return bit::BitSequenceLikeAttr{};
         const auto impl = lhs.getElementType().dyn_cast<InterpretableType>();
-        if (!impl) return BitSequenceLikeAttr{};
-        if (rhs.getElementType() != impl) return BitSequenceLikeAttr{};
+        if (!impl) return bit::BitSequenceLikeAttr{};
+        if (rhs.getElementType() != impl) return bit::BitSequenceLikeAttr{};
 
         const auto i1Ty = IntegerType::get(lhs.getContext(), 1);
         return lhs.zip(
             [pred, impl](const auto &lhs, const auto &rhs) -> bit_result {
                 if (const auto ordering = cmp(impl, lhs, rhs))
-                    return BitSequence(matches(*ordering, pred));
+                    return bit::BitSequence(matches(*ordering, pred));
 
                 return std::nullopt;
             },
             rhs,
             i1Ty);
     }
-    [[nodiscard]] static BitSequenceLikeAttr
+    [[nodiscard]] static bit::BitSequenceLikeAttr
     cmp(PartialOrderingPredicate pred, Attribute lhs, Attribute rhs)
     {
-        const auto lhsBits = lhs.dyn_cast_or_null<BitSequenceLikeAttr>();
-        const auto rhsBits = rhs.dyn_cast_or_null<BitSequenceLikeAttr>();
+        const auto lhsBits = lhs.dyn_cast_or_null<bit::BitSequenceLikeAttr>();
+        const auto rhsBits = rhs.dyn_cast_or_null<bit::BitSequenceLikeAttr>();
         if (lhsBits && rhsBits) return cmp(pred, lhsBits, rhsBits);
 
-        return BitSequenceLikeAttr{};
+        return bit::BitSequenceLikeAttr{};
     }
 
 #define COMMON_OP(op)                                                          \
     [[nodiscard]] static bit_result op(                                        \
         InterpretableType type,                                                \
-        const BitSequence &lhs,                                                \
-        const BitSequence &rhs);                                               \
+        const bit::BitSequence &lhs,                                           \
+        const bit::BitSequence &rhs);                                          \
     [[nodiscard]] static bit_result op(                                        \
         Type type,                                                             \
-        const BitSequence &lhs,                                                \
-        const BitSequence &rhs)                                                \
+        const bit::BitSequence &lhs,                                           \
+        const bit::BitSequence &rhs)                                           \
     {                                                                          \
         return tryInterpret(DELEGATE(op), type, lhs, rhs);                     \
     }                                                                          \
-    [[nodiscard]] static BitSequenceLikeAttr op(                               \
-        BitSequenceLikeAttr lhs,                                               \
-        BitSequenceLikeAttr rhs)                                               \
+    [[nodiscard]] static bit::BitSequenceLikeAttr op(                          \
+        bit::BitSequenceLikeAttr lhs,                                          \
+        bit::BitSequenceLikeAttr rhs)                                          \
     {                                                                          \
         return tryInterpretBinary(DELEGATE(op), lhs, rhs);                     \
     }                                                                          \
-    [[nodiscard]] static BitSequenceLikeAttr op(Attribute lhs, Attribute rhs)  \
+    [[nodiscard]] static bit::BitSequenceLikeAttr op(                          \
+        Attribute lhs,                                                         \
+        Attribute rhs)                                                         \
     {                                                                          \
         return tryInterpret(DELEGATE(op), lhs, rhs);                           \
     }
@@ -228,25 +232,25 @@ public:
 #define CLOSED_OP(op)                                                          \
     [[nodiscard]] static bit_result op(                                        \
         InterpretableType type,                                                \
-        const BitSequence &lhs,                                                \
-        const BitSequence &rhs,                                                \
+        const bit::BitSequence &lhs,                                           \
+        const bit::BitSequence &rhs,                                           \
         RoundingMode roundingMode = RoundingMode::None);                       \
     [[nodiscard]] static bit_result op(                                        \
         Type type,                                                             \
-        const BitSequence &lhs,                                                \
-        const BitSequence &rhs,                                                \
+        const bit::BitSequence &lhs,                                           \
+        const bit::BitSequence &rhs,                                           \
         RoundingMode roundingMode = RoundingMode::None)                        \
     {                                                                          \
         return tryInterpret(DELEGATE(op), type, lhs, rhs, roundingMode);       \
     }                                                                          \
-    [[nodiscard]] static BitSequenceLikeAttr op(                               \
-        BitSequenceLikeAttr lhs,                                               \
-        BitSequenceLikeAttr rhs,                                               \
+    [[nodiscard]] static bit::BitSequenceLikeAttr op(                          \
+        bit::BitSequenceLikeAttr lhs,                                          \
+        bit::BitSequenceLikeAttr rhs,                                          \
         RoundingMode roundingMode = RoundingMode::None)                        \
     {                                                                          \
         return tryInterpretBinary(DELEGATE(op), lhs, rhs, roundingMode);       \
     }                                                                          \
-    [[nodiscard]] static BitSequenceLikeAttr op(                               \
+    [[nodiscard]] static bit::BitSequenceLikeAttr op(                          \
         Attribute lhs,                                                         \
         Attribute rhs,                                                         \
         RoundingMode roundingMode = RoundingMode::None)                        \
@@ -294,13 +298,13 @@ public:
     /// @pre    `type`
     /// @pre    `value.size() == from.getBitWidth()`
     [[nodiscard]] static ValueFacts
-    getFacts(InterpretableType type, const BitSequence &value);
+    getFacts(InterpretableType type, const bit::BitSequence &value);
     [[nodiscard]] static ValueFacts
-    getFacts(Type type, const BitSequence &value)
+    getFacts(Type type, const bit::BitSequence &value)
     {
         return tryInterpret(DELEGATE(getFacts), type, value);
     }
-    [[nodiscard]] static ValueFacts getFacts(BitSequenceAttr attr)
+    [[nodiscard]] static ValueFacts getFacts(bit::BitSequenceAttr attr)
     {
         if (!attr) return ValueFacts::None;
         const auto impl = attr.getType().dyn_cast<InterpretableType>();
@@ -308,7 +312,7 @@ public:
 
         return getFacts(impl, attr.getValue());
     }
-    [[nodiscard]] static ValueFacts getFacts(BitSequenceLikeAttr attr);
+    [[nodiscard]] static ValueFacts getFacts(bit::BitSequenceLikeAttr attr);
 
 #undef CLOSED_OP
 #undef COMMON_OP

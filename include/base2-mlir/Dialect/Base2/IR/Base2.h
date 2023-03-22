@@ -1,4 +1,4 @@
-/// Convenience include for the Base2 dialect.
+/// Convenience include for the Bit dialect.
 ///
 /// @file
 /// @author     Jihaong Bi (jiahong.bi@mailbox.tu-dresden.de)
