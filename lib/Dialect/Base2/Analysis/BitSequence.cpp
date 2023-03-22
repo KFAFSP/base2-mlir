@@ -17,16 +17,16 @@ using namespace mlir::base2;
 /// Type of the words in storage.
 using word_type = llvm::APInt::WordType;
 /// Size of the words in storage in bits.
-static constexpr auto word_size = std::numeric_limits<word_type>::digits;
+static constexpr auto word_bits = bit_sequence_length<word_type>;
 /// Size of the words in storage in bytes.
-static constexpr auto word_bytes = word_size / 8;
+static constexpr auto word_bytes = word_bits / 8;
 static_assert(
-    word_bytes * 8 == word_size,
+    word_bytes * 8 == word_bits,
     "word_type must be densely packed bytes");
 /// Number of nibbles needed to represent a storage word.
-static constexpr auto word_nibbles = (word_size + 3) / 4;
+static constexpr auto word_nibbles = (word_bits + 3) / 4;
 /// Mask to extract sub-word bit indices.
-static constexpr auto word_mask = (1UL << (word_size - 1UL)) - 1UL;
+static constexpr auto word_mask = word_bits - 1UL;
 
 /// Swap the order of the bytes in @p word .
 static void byteSwap(word_type &word)
@@ -117,15 +117,15 @@ static bool consumeHexDigit(StringRef &str, BitSequence::Builder &result)
     }
 
     str = str.drop_front();
-    result.append(APInt(4, digit, false));
+    result.append(static_cast<unsigned>(digit), 4);
     return true;
 }
 
 //===----------------------------------------------------------------------===//
-// BitSequenceBase
+// BitSequence
 //===----------------------------------------------------------------------===//
 
-void BitSequenceBase::getBytes(
+void BitSequence::getBytes(
     llvm::SmallVectorImpl<std::uint8_t> &result,
     std::endian endian) const
 {
@@ -137,7 +137,7 @@ void BitSequenceBase::getBytes(
             // Skip all MSB bytes that are not defined.
             const auto bytes = getBytesBE(*it++);
             ArrayRef<std::uint8_t> activeBytes(bytes);
-            activeBytes = activeBytes.drop_front((word_size - remBits) / 8);
+            activeBytes = activeBytes.drop_front((word_bits - remBits) / 8);
 
             // Perform the byte swap.
             if (endian != std::endian::big)
@@ -147,7 +147,7 @@ void BitSequenceBase::getBytes(
         }
 
         // Copy the LSB words, without truncation.
-        while (it++ != end) copyBytes(*it, result, endian);
+        while (it != end) copyBytes(*it++, result, endian);
     };
 
     // Words are organized from least to most significant.
@@ -162,7 +162,7 @@ void BitSequenceBase::getBytes(
     }
 }
 
-void BitSequenceBase::print(llvm::raw_ostream &out) const
+void BitSequence::print(llvm::raw_ostream &out) const
 {
     out << "0x";
 
@@ -234,9 +234,9 @@ BitSequence BitSequence::fromBytes(
     word_type* rem;
     if (endian == std::endian::little) {
         words.append(inWords.begin(), inWords.end());
-        rem = &words.emplace_back();
+        rem = &words.emplace_back(0);
     } else {
-        rem = &words.emplace_back();
+        rem = &words.emplace_back(0);
         words.append(inWords.rbegin(), inWords.rend());
     }
     MutableArrayRef<word_type> outWords = words;
@@ -247,7 +247,12 @@ BitSequence BitSequence::fromBytes(
         const auto remBytes = MutableArrayRef<std::uint8_t>(
             reinterpret_cast<std::uint8_t*>(rem),
             word_bytes);
-        for (auto [i, b] : llvm::enumerate(bytes)) remBytes[i] = b;
+
+        if (endian == std::endian::little)
+            for (auto [i, b] : llvm::enumerate(bytes)) remBytes[i] = b;
+        else
+            for (auto [i, b] : llvm::enumerate(bytes))
+                remBytes[word_bytes - bytes.size() + i] = b;
     } else {
         // We did not end up using the remainder word.
         if (endian == std::endian::little)
@@ -276,13 +281,14 @@ void BitSequence::fromBytes(
         const auto end = bytes.end();
         unsigned available = 0;
         std::uint8_t accu = 0;
-        while (it != end) {
+        while (true) {
             if (available == 0) {
-                accu = *it;
+                if (it == end) break;
+                accu = *it++;
                 available = 8;
             }
 
-            result.push_back(accu & 0x01);
+            result.emplace_back(static_cast<bool>(accu & 0x01));
             accu >>= 1;
             --available;
         }
@@ -293,7 +299,7 @@ void BitSequence::fromBytes(
     // Handle byte packing case.
     const auto bytesPerValue = std::max(0U, (bitWidth + 7) / 8);
     assert((bytes.size() % bytesPerValue) == 0);
-    while (bytes.size() >= bytesPerValue) {
+    while (!bytes.empty()) {
         result.push_back(BitSequence::fromBytes(
             bytes.take_front(bytesPerValue),
             bitWidth,
@@ -323,12 +329,12 @@ FailureOr<BitSequence> mlir::FieldParser<BitSequence>::parse(AsmParser &parser)
         switch (state) {
         case 0:
             if (window.consume_front_insensitive("0b")) {
-                builder.reserve(window.size() * 4);
+                builder.reserve_lsb(window.size() * 4);
                 state = 1;
                 break;
             }
             if (window.consume_front_insensitive("0x")) {
-                builder.reserve(window.size() * 4);
+                builder.reserve_lsb(window.size() * 4);
                 state = 2;
                 break;
             }
