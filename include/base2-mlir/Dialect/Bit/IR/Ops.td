@@ -111,4 +111,195 @@ def Bit_CastOp : Bit_Op<
     let hasCanonicalizer = 1;
 }
 
+//===----------------------------------------------------------------------===//
+// CmpOp
+//===----------------------------------------------------------------------===//
+
+def Bit_CmpOp : Bit_Op<
+        "cmp",
+        [
+            Pure,
+            OpAsmOpInterface,
+            SameTypeOperands,
+            SameOperandsAndResultShape,
+            TypesMatchWith<
+                "result is i1 of operand shape",
+                "lhs", "result", "::getI1SameShape($_self)">]
+                # ElementwiseMappable.traits> {
+    let summary = "Bitwise comparison for bit sequences";
+    let description = [{
+        The `cmp` operation compares the two operands according to the specified
+        predicate and returns a boolean or container of booleans indicating the
+        result. The operands must have the same bit width.
+
+        Syntax:
+
+        ```
+        cmp-op ::= `cmp` $predicate $lhs `,` $rhs `:` type(lhs)
+        ```
+
+        Example:
+
+        ```
+        %0 = bit.cmp eq %1, %2 : si16
+        ```
+    }];
+
+    let arguments = (ins
+        Bit_EqualityPredicateAttr:$predicate,
+        Bit_BitSequenceLike:$lhs,
+        Bit_BitSequenceLike:$rhs);
+    let results = (outs BoolLike:$result);
+
+    let assemblyFormat = [{
+        $predicate $lhs `,` $rhs attr-dict `:` type($lhs)
+    }];
+
+    let hasFolder = 1;
+
+    code extraClassDeclaration = [{
+    public:
+        //===--------------------------------------------------------------===//
+        // OpAsmOpInterface
+        //===--------------------------------------------------------------===//
+
+        void getAsmResultNames(function_ref<void(Value, StringRef)> setNameFn)
+        {
+            setNameFn(
+                getResult(),
+                stringifyEqualityPredicate(getPredicate()));
+        }
+    }];
+}
+
+//===----------------------------------------------------------------------===//
+// SelectOp
+//===----------------------------------------------------------------------===//
+
+def Bit_SelectOp : Bit_Op<
+        "select",
+        [
+            Pure,
+            AllTypesMatch<["trueValue", "falseValue", "result"]>,
+            TypesMatchWith<
+                "condition is i1 of result shape",
+                "result", "condition", "::getI1SameShape($_self)">]> {
+    let summary = "Ternary operator for bit sequences";
+    let description = [{
+        The `select` operation builds a result by examining a condition to
+        selecting values from a binary alternative. If the condition is `i1`,
+        the whole operand is selected. If the condition is a container of `i1`,
+        the operand shapes must match, and an element is selected per index.
+
+        Syntax:
+
+        ```
+        select-op ::= `select` $condition `,` $trueValue `,` $falseValue
+                        `:` [ type($condition) `,` ] type($result)
+        ```
+
+        Example:
+
+        ```
+        %x = bit.select %cond, %t, %f : tensor<3xi32>
+        %y = bit.select %cond2, %t, %f : tensor<3xi1>, tensor<3xi32>
+        ```
+    }];
+
+    let arguments = (ins
+        BoolLike:$condition,
+        Bit_BitSequenceLike:$trueValue,
+        Bit_BitSequenceLike:$falseValue);
+    let results = (outs Bit_BitSequenceLike:$result);
+
+    let hasCustomAssemblyFormat = 1;
+
+    let hasFolder = 1;
+}
+
+//===----------------------------------------------------------------------===//
+// Logic operations
+//===----------------------------------------------------------------------===//
+
+// Template for logic operations.
+class Bit_LogicOpBase<string mnemonic, list<Trait> traits = []>
+        : Bit_Op<
+            mnemonic,
+            traits
+                # [
+                    Pure,
+                    OpAsmOpInterface,
+                    Bit_LogicOp,
+                    SameOperandsAndResultType]
+                # ElementwiseMappable.traits> {
+    let arguments = (ins
+        Bit_BitSequenceLike:$lhs,
+        Bit_BitSequenceLike:$rhs);
+    let results = (outs Bit_BitSequenceLike:$result);
+
+    let assemblyFormat = [{ operands attr-dict `:` type($result) }];
+
+    let hasFolder = 1;
+}
+
+def Bit_AndOp : Bit_LogicOpBase<"and", [Commutative]> {
+    let summary = "Bitwise logical and";
+    let description = [{
+        The `and` operation computes the bitwise logical and of two bit
+        sequences or containers of bit sequences.
+
+        Syntax:
+
+        ```
+        and-op ::= `and` $lhs `,` $rhs `:` type(result)
+        ```
+
+        Example:
+
+        ```
+        %0 = bit.and %1, %2 : i16
+        ```
+    }];
+}
+
+def Bit_OrOp : Bit_LogicOpBase<"or", [Commutative]> {
+    let summary = "Bitwise logical or";
+    let description = [{
+        The `or` operation computes the bitwise logical or of two bit sequences
+        or containers of bit sequences.
+
+        Syntax:
+
+        ```
+        or-op ::= `or` $lhs `,` $rhs `:` type(result)
+        ```
+
+        Example:
+
+        ```
+        %0 = bit.or %1, %2 : i16
+        ```
+    }];
+}
+
+def Bit_XorOp : Bit_LogicOpBase<"xor", [Commutative]> {
+    let summary = "Bitwise logical exclusive or";
+    let description = [{
+        The `xor` operation computes the bitwise logical exclusive or of two
+        bit sequences or containers of bit sequences.
+
+        Syntax:
+
+        ```
+        xor-op ::= `xor` $lhs `,` $rhs `:` type(result)
+        ```
+
+        Example:
+
+        ```
+        %0 = bit.xor %1, %2 : i16
+        ```
+    }];
+}
+
 #endif

@@ -408,6 +408,28 @@ public:
     }
 
     //===------------------------------------------------------------------===//
+    // Logic operations
+    //===------------------------------------------------------------------===//
+
+    /// Computes the bitwise complement.
+    BitSequence logicCmpl() const { return ~asUInt(); }
+    /// Computes the bitwise logical and with @p rhs .
+    BitSequence logicAnd(const BitSequence &rhs) const
+    {
+        return asUInt() & rhs.asUInt();
+    }
+    /// Computes the bitwise logical or with @p rhs .
+    BitSequence logicOr(const BitSequence &rhs) const
+    {
+        return asUInt() | rhs.asUInt();
+    }
+    /// Computes the bitwise exclusive or with @p rhs .
+    BitSequence logicXor(const BitSequence &rhs) const
+    {
+        return asUInt() ^ rhs.asUInt();
+    }
+
+    //===------------------------------------------------------------------===//
     // Container interface
     //===------------------------------------------------------------------===//
 
@@ -418,6 +440,8 @@ public:
 
     /// Determines whether this sequence is just zero bits.
     [[nodiscard]] bool isZeros() const { return asUInt().isZero(); }
+    /// Determines whether this sequence is just one bits.
+    [[nodiscard]] bool isOnes() const { return asUInt().isAllOnes(); }
 
     //===------------------------------------------------------------------===//
     // Equality comparison
