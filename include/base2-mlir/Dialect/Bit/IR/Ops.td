@@ -156,6 +156,7 @@ def Bit_CmpOp : Bit_Op<
     }];
 
     let hasFolder = 1;
+    let hasCanonicalizer = 1;
 
     code extraClassDeclaration = [{
     public:

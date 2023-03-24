@@ -36,7 +36,7 @@ def Bit_BitSequenceType : TypeInterface<"BitSequenceType"> {
 //===----------------------------------------------------------------------===//
 
 def Bit_BitSequenceLike
-        : TypeConstraint<
+        : Type<
             /*predicate=*/CPred<"$_self.isa<::mlir::bit::BitSequenceLikeType>()">,
             /*summary=*/"Type or container of BitSequenceType",
             /*cppClassName=*/"::mlir::bit::BitSequenceLikeType">;

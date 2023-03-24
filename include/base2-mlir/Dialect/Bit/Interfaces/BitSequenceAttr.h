@@ -234,6 +234,19 @@ public:
         return DenseBitSequencesAttr::get(attr.cast<DenseBitSequencesAttr>());
     }
 
+    /// Builds a splat BitSequenceLikeAttr with @p type and @p bits .
+    ///
+    /// @pre    `type`
+    /// @pre    `bits.size() >= type.getElementType().getBitWidth()`
+    [[nodiscard]] static BitSequenceLikeAttr
+    getSplat(BitSequenceLikeType type, const BitSequence &bits)
+    {
+        if (auto elementTy = type.dyn_cast<BitSequenceType>())
+            return get(elementTy, bits);
+
+        return DenseBitSequencesAttr::get(type.cast<ShapedType>(), bits);
+    }
+
     /// Initializes a BitSequenceLikeAttr from @p attr .
     ///
     /// @pre    `attr`

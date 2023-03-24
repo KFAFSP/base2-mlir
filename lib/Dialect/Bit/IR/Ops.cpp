@@ -172,6 +172,69 @@ OpFoldResult CmpOp::fold(CmpOp::FoldAdaptor adaptor)
     return OpFoldResult{};
 }
 
+namespace {
+
+struct BooleanComparison : OpRewritePattern<CmpOp> {
+    using OpRewritePattern::OpRewritePattern;
+
+    LogicalResult
+    matchAndRewrite(CmpOp op, PatternRewriter &rewriter) const override
+    {
+        // Ignore trivial cases.
+        switch (op.getPredicate()) {
+        case EqualityPredicate::Verum:
+        case EqualityPredicate::Falsum: return failure();
+        default: break;
+        }
+
+        // Look for an operation on booleans with a right-hand constant.
+        if (!op.getLhs().getType().getElementType().isSignlessInteger(1))
+            return failure();
+        auto rhsDef = op.getRhs().getDefiningOp<ConstantOp>();
+        if (!rhsDef) return failure();
+        const auto rhsAttr = rhsDef.getValue();
+
+        // Determine the splat value of the right-hand constant.
+        bool rhsVal;
+        if (const auto rhsDense = rhsAttr.dyn_cast<DenseBitSequencesAttr>()) {
+            if (!rhsDense.isSplat()) {
+                // We could technically break apart this operation, but we
+                // leave that to a later pass after de-tensorization.
+                return failure();
+            }
+            rhsVal = rhsDense.getSplatValue().isOnes();
+        } else {
+            rhsVal = rhsAttr.cast<BitSequenceAttr>().getValue().isOnes();
+        }
+
+        if ((op.getPredicate() == EqualityPredicate::Equal) == rhsVal) {
+            // Operation is useless.
+            rewriter.replaceOp(op, op.getLhs());
+        } else {
+            // Operation is a bitwise complement.
+            const auto mask = rewriter
+                                  .create<ConstantOp>(
+                                      op.getLoc(),
+                                      BitSequenceLikeAttr::getSplat(
+                                          op.getRhs().getType(),
+                                          true))
+                                  .getResult();
+            rewriter.replaceOpWithNewOp<XorOp>(op, op.getLhs(), mask);
+        }
+
+        return success();
+    }
+};
+
+} // namespace
+
+void CmpOp::getCanonicalizationPatterns(
+    RewritePatternSet &patterns,
+    MLIRContext* context)
+{
+    patterns.add<BooleanComparison>(context);
+}
+
 //===----------------------------------------------------------------------===//
 // SelectOp
 //===----------------------------------------------------------------------===//
@@ -289,15 +352,9 @@ OpFoldResult XorOp::fold(XorOp::FoldAdaptor adaptor)
 {
     // Fold trivial equality.
     if (getLhs() == getRhs()) {
-        const auto result =
-            BitSequence::zeros(getType().getElementType().getBitWidth());
-        if (const auto shaped = getType().dyn_cast<ShapedType>()) {
-            return DenseBitSequencesAttr::get(
-                shaped.cloneWith(std::nullopt, getType().getElementType()),
-                result);
-        }
-
-        return BitSequenceAttr::get(getType().getElementType(), result);
+        return BitSequenceLikeAttr::getSplat(
+            getType(),
+            BitSequence::zeros(getType().getElementType().getBitWidth()));
     }
 
     // Fold if at least one operand is constant (commutative!).

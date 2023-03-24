@@ -65,6 +65,39 @@ func.func @cmp_trivial_container(%arg0: tensor<3xi64>)
     return %0, %1, %2, %3 : tensor<3xi1>, tensor<3xi1>, tensor<3xi1>, tensor<3xi1>
 }
 
+// CHECK-LABEL: func.func @cmp_bool_scalar(
+// CHECK-SAME: %[[ARG0:.+]]: i1
+func.func @cmp_bool_scalar(%arg0: i1) -> (i1, i1, i1, i1) {
+    // CHECK-DAG: %[[TRUE:.+]] = bit.constant true
+    %false = bit.constant false
+    %true = bit.constant true
+    %0 = bit.cmp eq %arg0, %false : i1
+    // CHECK: %[[CMPL0:.+]] = bit.xor %arg0, %[[TRUE]] : i1
+    %1 = bit.cmp ne %arg0, %false : i1
+    %2 = bit.cmp eq %arg0, %true : i1
+    %3 = bit.cmp ne %arg0, %true : i1
+    // CHECK: %[[CMPL1:.+]] = bit.xor %arg0, %[[TRUE]] : i1
+    // CHECK: return %[[CMPL0]], %[[ARG0]], %[[ARG0]], %[[CMPL1]]
+    return %0, %1, %2, %3 : i1, i1, i1, i1
+}
+
+// CHECK-LABEL: func.func @cmp_bool_container(
+// CHECK-SAME: %[[ARG0:.+]]: tensor<3xi1>
+func.func @cmp_bool_container(%arg0: tensor<3xi1>)
+    -> (tensor<3xi1>, tensor<3xi1>, tensor<3xi1>, tensor<3xi1>) {
+    // CHECK-DAG: %[[TRUE:.+]] = bit.constant dense<true> : tensor<3xi1>
+    %false = bit.constant dense<false> : tensor<3xi1>
+    %true = bit.constant dense<true> : tensor<3xi1>
+    %0 = bit.cmp eq %arg0, %false : tensor<3xi1>
+    // CHECK: %[[CMPL0:.+]] = bit.xor %arg0, %[[TRUE]]
+    %1 = bit.cmp ne %arg0, %false : tensor<3xi1>
+    %2 = bit.cmp eq %arg0, %true : tensor<3xi1>
+    %3 = bit.cmp ne %arg0, %true : tensor<3xi1>
+    // CHECK: %[[CMPL1:.+]] = bit.xor %arg0, %[[TRUE]]
+    // CHECK: return %[[CMPL0]], %[[ARG0]], %[[ARG0]], %[[CMPL1]]
+    return %0, %1, %2, %3 : tensor<3xi1>, tensor<3xi1>, tensor<3xi1>, tensor<3xi1>
+}
+
 //===----------------------------------------------------------------------===//
 // select
 //===----------------------------------------------------------------------===//
