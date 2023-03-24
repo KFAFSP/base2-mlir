@@ -1,4 +1,6 @@
-add_library(BitAnalysis OBJECT
-    BitFolder.cpp
-    BitSequence.cpp
+add_mlir_library(BitAnalysis
+        BitFolder.cpp
+        BitSequence.cpp
+
+    ENABLE_AGGREGATION
 )

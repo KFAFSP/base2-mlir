@@ -14,4 +14,5 @@ add_mlir_dialect_library(BitDialect
         BitAnalysis
         BitEnums
         BitInterfaces
+        BitTransforms
 )

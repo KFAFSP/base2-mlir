@@ -22,6 +22,7 @@ int main(int argc, char* argv[])
     registry.insert<bit::BitDialect>();
 
     registerAllPasses();
+    bit::registerBitPasses();
 
     return asMainReturnCode(
         MlirOptMain(argc, argv, "base2-mlir optimizer driver\n", registry));

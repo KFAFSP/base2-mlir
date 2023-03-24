@@ -6,3 +6,4 @@
 #pragma once
 
 #include "base2-mlir/Dialect/Bit/IR/Ops.h"
+#include "base2-mlir/Dialect/Bit/Transforms/Passes.h"

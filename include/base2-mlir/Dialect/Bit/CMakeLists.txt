@@ -12,3 +12,5 @@ mlir_gen_enums(Bit)
 add_subdirectory(Interfaces)
 # Attributes, Dialect, Operations and Types.
 add_subdirectory(IR)
+# Passes
+add_subdirectory(Transforms)

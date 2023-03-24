@@ -1,6 +1,9 @@
-add_library(BitInterfaces OBJECT
-    BitSequenceAttr.cpp
-    BitSequenceType.cpp
-    LogicOp.cpp
+add_mlir_library(BitInterfaces
+        BitSequenceAttr.cpp
+        BitSequenceType.cpp
+        LogicOp.cpp
+
+    ENABLE_AGGREGATION
+    DEPENDS
+        BitIncGen
 )
-add_dependencies(BitAnalysis BitIncGen)

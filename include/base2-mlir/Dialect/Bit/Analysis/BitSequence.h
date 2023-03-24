@@ -373,6 +373,8 @@ public:
     }
     /// Initializes a BitSequence of @p width zeros.
     static BitSequence zeros(bit_width_t width) { return fill(width, false); }
+    /// Initializes a BitSequence of @p width ones.
+    static BitSequence ones(bit_width_t width) { return fill(width, true); }
     /// Initializes a BitSequence of @p width copying @p lsb .
     static BitSequence fromLSB(bit_width_t width, word_type lsb)
     {
