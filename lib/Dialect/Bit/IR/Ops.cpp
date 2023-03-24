@@ -6,41 +6,15 @@
 #include "base2-mlir/Dialect/Bit/IR/Ops.h"
 
 #include "base2-mlir/Dialect/Bit/Analysis/BitFolder.h"
+#include "base2-mlir/Utils.h"
 #include "mlir/IR/OpImplementation.h"
 #include "mlir/IR/PatternMatch.h"
-#include "mlir/IR/TypeUtilities.h"
 
 #define DEBUG_TYPE "bit-ops"
 
 using namespace mlir;
 using namespace mlir::bit;
-
-/// Obtains a type with the same shape as @p type , using @p elementTy.
-///
-/// @pre    `type`
-/// @pre    `elementTy`
-[[nodiscard]] static Type getSameShape(Type type, Type elementTy)
-{
-    if (const auto shapedTy = type.dyn_cast<ShapedType>())
-        return shapedTy.cloneWith(std::nullopt, elementTy);
-
-    return elementTy;
-}
-
-/// Obtains the I1 or container-of-I1 that matches the shape of @p type .
-///
-/// @pre    `type`
-[[nodiscard]] static Type getI1SameShape(Type type)
-{
-    return getSameShape(type, IntegerType::get(type.getContext(), 1));
-}
-
-/// Combines @p attr and @p value into an OpFoldResult.
-[[nodiscard]] static OpFoldResult combine(Attribute attr, Value value)
-{
-    if (attr) return attr;
-    return value;
-}
+using namespace mlir::ext;
 
 //===- Generated implementation -------------------------------------------===//
 

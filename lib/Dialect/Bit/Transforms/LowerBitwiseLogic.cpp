@@ -4,6 +4,7 @@
 /// @author     Karl F. A. Friebel (karl.friebel@tu-dresden.de)
 
 #include "base2-mlir/Dialect/Bit/IR/Bit.h"
+#include "base2-mlir/Utils.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/TypeUtilities.h"
@@ -14,19 +15,11 @@
 
 using namespace mlir;
 using namespace mlir::bit;
+using namespace mlir::ext;
 
-/// Obtains a type with the same shape as @p type , using @p elementTy .
+/// Obtains a (container of) signless type for width and shape of @p type .
 ///
 /// @pre    `type`
-/// @pre    `elementTy`
-[[nodiscard]] static Type getSameShape(Type type, Type elementTy)
-{
-    if (const auto shapedTy = type.dyn_cast<ShapedType>())
-        return shapedTy.cloneWith(std::nullopt, elementTy);
-
-    return elementTy;
-}
-
 [[nodiscard]] static Type getSignlessType(BitSequenceLikeType type)
 {
     const auto bitWidth = type.getElementType().getBitWidth();
