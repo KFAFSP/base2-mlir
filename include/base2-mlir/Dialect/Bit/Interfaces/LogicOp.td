@@ -1,6 +1,6 @@
 //===- LogicOp.td ------------------------------------------*- tablegen -*-===//
 //
-// This is the definitions file for the Base2 LogicOp interface.
+// This is the definitions file for the Bit LogicOp interface.
 //
 //===----------------------------------------------------------------------===//
 
@@ -19,7 +19,11 @@ def Bit_LogicOp : OpInterface<"LogicOp"> {
     code verify = [{
         static_assert(
             ConcreteOp::template hasTrait<::mlir::OpTrait::SameOperandsAndResultType>(),
-            "`ArithmeticOp` is only applicable to `SameOperandsAndResultType` ops."
+            "`LogicOp` is only applicable to `SameOperandsAndResultType` ops."
+        );
+        static_assert(
+            ConcreteOp::template hasTrait<::mlir::OpTrait::OneResult>(),
+            "`LogicOp` is only applicable to `OneResult` ops."
         );
         static_assert(
             ConcreteOp::template hasTrait<::mlir::OpTrait::Elementwise>()

@@ -242,7 +242,7 @@ class Bit_LogicOpBase<string mnemonic, list<Trait> traits = []>
     let hasFolder = 1;
 }
 
-def Bit_AndOp : Bit_LogicOpBase<"and", [Commutative]> {
+def Bit_AndOp : Bit_LogicOpBase<"and", [Commutative, Idempotent]> {
     let summary = "Bitwise logical and";
     let description = [{
         The `and` operation computes the bitwise logical and of two bit
@@ -262,7 +262,7 @@ def Bit_AndOp : Bit_LogicOpBase<"and", [Commutative]> {
     }];
 }
 
-def Bit_OrOp : Bit_LogicOpBase<"or", [Commutative]> {
+def Bit_OrOp : Bit_LogicOpBase<"or", [Commutative, Idempotent]> {
     let summary = "Bitwise logical or";
     let description = [{
         The `or` operation computes the bitwise logical or of two bit sequences

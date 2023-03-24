@@ -261,8 +261,7 @@ OpFoldResult SelectOp::fold(SelectOp::FoldAdaptor adaptor)
 
 OpFoldResult AndOp::fold(AndOp::FoldAdaptor adaptor)
 {
-    // Fold trivial equality.
-    if (getLhs() == getRhs()) return getLhs();
+    // NOTE: Idempotency is folded by trait.
 
     // Fold if at least one operand is constant (commutative!).
     if (const auto attr =
@@ -275,8 +274,7 @@ OpFoldResult AndOp::fold(AndOp::FoldAdaptor adaptor)
 
 OpFoldResult OrOp::fold(OrOp::FoldAdaptor adaptor)
 {
-    // Fold trivial equality.
-    if (getLhs() == getRhs()) return getLhs();
+    // NOTE: Idempotency is folded by trait.
 
     // Fold if at least one operand is constant (commutative!).
     if (const auto attr =
