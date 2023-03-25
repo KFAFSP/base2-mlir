@@ -261,6 +261,18 @@ def Bit_AndOp : Bit_LogicOpBase<"and", [Commutative, Idempotent]> {
         %0 = bit.and %1, %2 : i16
         ```
     }];
+
+    code extraClassDeclaration = [{
+    public:
+        //===--------------------------------------------------------------===//
+        // OpAsmOpInterface
+        //===--------------------------------------------------------------===//
+
+        void getAsmResultNames(function_ref<void(Value, StringRef)> setNameFn)
+        {
+            setNameFn(getResult(), "and");
+        }
+    }];
 }
 
 def Bit_OrOp : Bit_LogicOpBase<"or", [Commutative, Idempotent]> {
@@ -281,6 +293,18 @@ def Bit_OrOp : Bit_LogicOpBase<"or", [Commutative, Idempotent]> {
         %0 = bit.or %1, %2 : i16
         ```
     }];
+
+    code extraClassDeclaration = [{
+    public:
+        //===--------------------------------------------------------------===//
+        // OpAsmOpInterface
+        //===--------------------------------------------------------------===//
+
+        void getAsmResultNames(function_ref<void(Value, StringRef)> setNameFn)
+        {
+            setNameFn(getResult(), "or");
+        }
+    }];
 }
 
 def Bit_XorOp : Bit_LogicOpBase<"xor", [Commutative]> {
@@ -300,6 +324,18 @@ def Bit_XorOp : Bit_LogicOpBase<"xor", [Commutative]> {
         ```
         %0 = bit.xor %1, %2 : i16
         ```
+    }];
+
+    code extraClassDeclaration = [{
+    public:
+        //===--------------------------------------------------------------===//
+        // OpAsmOpInterface
+        //===--------------------------------------------------------------===//
+
+        void getAsmResultNames(function_ref<void(Value, StringRef)> setNameFn)
+        {
+            setNameFn(getResult(), "xor");
+        }
     }];
 }
 
@@ -362,6 +398,15 @@ def Bit_ShlOp : Bit_ShiftOpBase<"shl"> {
     code extraClassDeclaration = [{
     public:
         //===--------------------------------------------------------------===//
+        // OpAsmOpInterface
+        //===--------------------------------------------------------------===//
+
+        void getAsmResultNames(function_ref<void(Value, StringRef)> setNameFn)
+        {
+            setNameFn(getResult(), "shl");
+        }
+
+        //===--------------------------------------------------------------===//
         // ShiftOp
         //===--------------------------------------------------------------===//
 
@@ -399,6 +444,15 @@ def Bit_ShrOp : Bit_ShiftOpBase<"shr"> {
 
     code extraClassDeclaration = [{
     public:
+        //===--------------------------------------------------------------===//
+        // OpAsmOpInterface
+        //===--------------------------------------------------------------===//
+
+        void getAsmResultNames(function_ref<void(Value, StringRef)> setNameFn)
+        {
+            setNameFn(getResult(), "shr");
+        }
+
         //===--------------------------------------------------------------===//
         // ShiftOp
         //===--------------------------------------------------------------===//
