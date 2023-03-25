@@ -9,17 +9,17 @@
 
 include "mlir/Pass/PassBase.td"
 
-def LowerBitwiseLogic : Pass<"lower-bitwise-logic", "ModuleOp"> {
-    let summary = "Lowers bitwise logic operations to signless integers";
+def LowerBitwise : Pass<"lower-bitwise", "ModuleOp"> {
+    let summary = "Lowers bitwise operations to signless integers";
     let description = [{
-        This pass replaces all bitwise logic operations with operations that
-        operate on signless integers.
+        This pass ensures that all bitwise operations are performed on signless
+        integers, making all bit casts explicit.
 
-        The `bit.and`, `bit.or` and `bit.xor` operations have their operands
-        converted using `bit.cast` operations.
+        The affected operations are `bit.cmp`, `bit.and`, `bit.or`, `bit.xor`,
+        `bit.shl`, `bit.shr`, `bit.count`, `bit.clz` and `bit.ctz`.
     }];
 
-    let constructor = "mlir::bit::createLowerBitwiseLogicPass()";
+    let constructor = "mlir::bit::createLowerBitwisePass()";
 }
 
 #endif

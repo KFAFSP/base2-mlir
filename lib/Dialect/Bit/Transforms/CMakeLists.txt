@@ -1,5 +1,5 @@
 add_mlir_library(BitTransforms
-        LowerBitwiseLogic.cpp
+        LowerBitwise.cpp
 
     ENABLE_AGGREGATION
     DEPENDS
