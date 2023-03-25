@@ -434,6 +434,56 @@ public:
     }
 
     //===------------------------------------------------------------------===//
+    // Shifting operations
+    //===------------------------------------------------------------------===//
+
+    /// Performs a logical left shift.
+    BitSequence logicShl(bit_width_t amount) const
+    {
+        return asUInt().shl(amount);
+    }
+    /// Performs a logical left shift with funnel @p rhs .
+    BitSequence funnelShl(const BitSequence &rhs, bit_width_t amount) const
+    {
+        auto result = asUInt().concat(rhs.asUInt()).shl(amount);
+        result.lshrInPlace(size());
+        return result.trunc(size());
+    }
+
+    /// Performs a logical right shift.
+    BitSequence logicShr(bit_width_t amount) const
+    {
+        return asUInt().lshr(amount);
+    }
+    /// Performs a logical right shift with funnel @p lhs.
+    BitSequence funnelShr(const BitSequence &lhs, bit_width_t amount) const
+    {
+        auto result = lhs.asUInt().concat(asUInt());
+        result.lshrInPlace(amount);
+        return result.trunc(size());
+    }
+
+    //===------------------------------------------------------------------===//
+    // Scanning operations
+    //===------------------------------------------------------------------===//
+
+    /// Counts the number of 1 bits.
+    [[nodiscard]] bit_width_t countOnes() const
+    {
+        return asUInt().countPopulation();
+    }
+    /// Counts the number of leading 0 bits.
+    [[nodiscard]] bit_width_t countLeadingZeros() const
+    {
+        return asUInt().countLeadingZeros();
+    }
+    /// Counts the number of trailing 0 bits.
+    [[nodiscard]] bit_width_t countTrailingZeros() const
+    {
+        return asUInt().countTrailingZeros();
+    }
+
+    //===------------------------------------------------------------------===//
     // Container interface
     //===------------------------------------------------------------------===//
 

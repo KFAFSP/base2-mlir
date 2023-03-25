@@ -203,3 +203,60 @@ func.func @shr() -> (i16, i16) {
     // CHECK: return %[[SHR]], %[[ROR]]
     return %0, %1 : i16, i16
 }
+
+//===----------------------------------------------------------------------===//
+// count
+//===----------------------------------------------------------------------===//
+
+// CHECK-LABEL: func.func @count(
+func.func @count() -> (index, index, index) {
+    // CHECK-DAG: %[[CST0:.+]] = arith.constant 0 : index
+    // CHECK-DAG: %[[CST1:.+]] = arith.constant 16 : index
+    // CHECK-DAG: %[[CST2:.+]] = arith.constant 32 : index
+    %cst0 = bit.constant 0 : i16
+    %cst1 = bit.constant -1 : i16
+    %cst2 = bit.constant -1 : i32
+    %0 = bit.count %cst0 : i16
+    %1 = bit.count %cst1 : i16
+    %2 = bit.count %cst2 : i32
+    // CHECK: return %[[CST0]], %[[CST1]], %[[CST2]]
+    return %0, %1, %2 : index, index, index
+}
+
+//===----------------------------------------------------------------------===//
+// clz
+//===----------------------------------------------------------------------===//
+
+// CHECK-LABEL: func.func @clz(
+func.func @clz() -> (index, index, index) {
+    // CHECK-DAG: %[[CST0:.+]] = arith.constant 0 : index
+    // CHECK-DAG: %[[CST1:.+]] = arith.constant 3 : index
+    // CHECK-DAG: %[[CST2:.+]] = arith.constant 16 : index
+    %cst0 = bit.constant -1 : i16
+    %cst1 = bit.constant 0x1000 : i16
+    %cst2 = bit.constant 0 : i16
+    %0 = bit.clz %cst0 : i16
+    %1 = bit.clz %cst1 : i16
+    %2 = bit.clz %cst2 : i16
+    // CHECK: return %[[CST0]], %[[CST1]], %[[CST2]]
+    return %0, %1, %2 : index, index, index
+}
+
+//===----------------------------------------------------------------------===//
+// ctz
+//===----------------------------------------------------------------------===//
+
+// CHECK-LABEL: func.func @ctz(
+func.func @ctz() -> (index, index, index) {
+    // CHECK-DAG: %[[CST0:.+]] = arith.constant 0 : index
+    // CHECK-DAG: %[[CST1:.+]] = arith.constant 3 : index
+    // CHECK-DAG: %[[CST2:.+]] = arith.constant 16 : index
+    %cst0 = bit.constant -1 : i16
+    %cst1 = bit.constant 0x0008 : i16
+    %cst2 = bit.constant 0 : i16
+    %0 = bit.ctz %cst0 : i16
+    %1 = bit.ctz %cst1 : i16
+    %2 = bit.ctz %cst2 : i16
+    // CHECK: return %[[CST0]], %[[CST1]], %[[CST2]]
+    return %0, %1, %2 : index, index, index
+}

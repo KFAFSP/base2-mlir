@@ -215,16 +215,11 @@ BitSequenceLikeAttr BitFolder::bitShl(
             BitSequence::zeros(bitWidth));
 
     if (!funnel)
-        return value.map([&](const BitSequence &v) -> BitSequence {
-            return v.asUInt().shl(amount);
-        });
+        return value.map(
+            [&](const BitSequence &v) { return v.logicShl(amount); });
 
     return value.zip(
-        [&](BitSequence v, BitSequence f) -> BitSequence {
-            auto result = v.asUInt().concat(f.asUInt()).shl(amount);
-            result.lshrInPlace(bitWidth);
-            return result.trunc(bitWidth);
-        },
+        [&](BitSequence v, BitSequence f) { return v.funnelShl(f, amount); },
         funnel);
 }
 
@@ -273,16 +268,11 @@ BitSequenceLikeAttr BitFolder::bitShr(
             BitSequence::zeros(bitWidth));
 
     if (!funnel)
-        return value.map([&](const BitSequence &v) -> BitSequence {
-            return v.asUInt().lshr(amount);
-        });
+        return value.map(
+            [&](const BitSequence &v) { return v.logicShr(amount); });
 
     return value.zip(
-        [&](BitSequence v, BitSequence f) -> BitSequence {
-            auto result = f.asUInt().concat(v.asUInt());
-            result.lshrInPlace(amount);
-            return result.trunc(bitWidth);
-        },
+        [&](BitSequence v, BitSequence f) { return v.funnelShr(f, amount); },
         funnel);
 }
 

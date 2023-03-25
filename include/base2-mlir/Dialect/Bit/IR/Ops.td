@@ -461,4 +461,81 @@ def Bit_ShrOp : Bit_ShiftOpBase<"shr"> {
     }];
 }
 
+//===----------------------------------------------------------------------===//
+// Scanning operations
+//===----------------------------------------------------------------------===//
+
+// Template for scanning operations.
+class Bit_ScanOpBase<string mnemonic, list<Trait> traits = []>
+        : Bit_Op<mnemonic, traits # [Pure]> {
+    let arguments = (ins Bit_BitSequenceType:$value);
+    let results = (outs Index:$result);
+
+    let assemblyFormat = [{ $value attr-dict `:` type($value) }];
+
+    let hasFolder = 1;
+}
+
+def Bit_CountOp : Bit_ScanOpBase<"count"> {
+    let summary = "Population count";
+    let description = [{
+        The `count` operation counts the number of 1 bits in the input. The
+        return value is of type index.
+
+        Syntax:
+
+        ```
+        count-op ::= `count` $value `:` type(value)
+        ```
+
+        Example:
+
+        ```
+        %x = bit.count %value : i16
+        ```
+    }];
+}
+
+def Bit_ClzOp : Bit_ScanOpBase<"clz"> {
+    let summary = "Leading zero count";
+    let description = [{
+        The `clz` operation counts the number of leading 0 bits in the input.
+        The return value is of type index. If the input value is 0, the result
+        is the bit width of its type.
+
+        Syntax:
+
+        ```
+        clz-op ::= `clz` $value `:` type(value)
+        ```
+
+        Example:
+
+        ```
+        %x = bit.clz %value : i16
+        ```
+    }];
+}
+
+def Bit_CtzOp : Bit_ScanOpBase<"ctz"> {
+    let summary = "Trailing zero count";
+    let description = [{
+        The `ctz` operation counts the number of trailing 0 bits in the input.
+        The return value is of type index. If the input value is 0, the result
+        is the bit width of its type.
+
+        Syntax:
+
+        ```
+        ctz-op ::= `ctz` $value `:` type(value)
+        ```
+
+        Example:
+
+        ```
+        %x = bit.ctz %value : i16
+        ```
+    }];
+}
+
 #endif

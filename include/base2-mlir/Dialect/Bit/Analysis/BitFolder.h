@@ -146,6 +146,34 @@ public:
     /// @pre    @p funnel is empty or has the same type as @p value
     [[nodiscard]] static OpFoldResult
     bitShr(OpFoldResult value, bit_width_t amount, OpFoldResult funnel = {});
+
+    /// Folds a population count operator.
+    ///
+    /// @pre    `value`
+    [[nodiscard]] static IntegerAttr bitCount(BitSequenceAttr value)
+    {
+        return IntegerAttr::get(
+            IndexType::get(value.getContext()),
+            value.getValue().countOnes());
+    }
+    /// Folds a leading zero count operator.
+    ///
+    /// @pre    `value`
+    [[nodiscard]] static IntegerAttr bitClz(BitSequenceAttr value)
+    {
+        return IntegerAttr::get(
+            IndexType::get(value.getContext()),
+            value.getValue().countLeadingZeros());
+    }
+    /// Folds a trailing zero count operator.
+    ///
+    /// @pre    `value`
+    [[nodiscard]] static IntegerAttr bitCtz(BitSequenceAttr value)
+    {
+        return IntegerAttr::get(
+            IndexType::get(value.getContext()),
+            value.getValue().countTrailingZeros());
+    }
 };
 
 } // namespace mlir::bit

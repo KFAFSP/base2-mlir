@@ -657,6 +657,40 @@ void ShrOp::getCanonicalizationPatterns(
 }
 
 //===----------------------------------------------------------------------===//
+// Scanning operations
+//===----------------------------------------------------------------------===//
+
+OpFoldResult CountOp::fold(CountOp::FoldAdaptor adaptor)
+{
+    // Fold if operand is constant.
+    if (const auto attr =
+            adaptor.getValue().dyn_cast_or_null<BitSequenceAttr>())
+        return BitFolder::bitCount(attr);
+
+    return OpFoldResult{};
+}
+
+OpFoldResult ClzOp::fold(ClzOp::FoldAdaptor adaptor)
+{
+    // Fold if operand is constant.
+    if (const auto attr =
+            adaptor.getValue().dyn_cast_or_null<BitSequenceAttr>())
+        return BitFolder::bitClz(attr);
+
+    return OpFoldResult{};
+}
+
+OpFoldResult CtzOp::fold(CtzOp::FoldAdaptor adaptor)
+{
+    // Fold if operand is constant.
+    if (const auto attr =
+            adaptor.getValue().dyn_cast_or_null<BitSequenceAttr>())
+        return BitFolder::bitCtz(attr);
+
+    return OpFoldResult{};
+}
+
+//===----------------------------------------------------------------------===//
 // BitDialect
 //===----------------------------------------------------------------------===//
 
