@@ -24,7 +24,7 @@ def Bit_Dialect : Dialect {
     }];
 
     let dependentDialects = [
-        "arith::ArithDialect"
+        "index::IndexDialect"
     ];
 
     let hasConstantMaterializer = 1;

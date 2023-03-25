@@ -449,7 +449,7 @@ struct BalanceRotations : OpRewritePattern<Op> {
         // Generate shortened rotation.
         const auto totalAmountVal =
             rewriter
-                .create<arith::ConstantOp>(
+                .create<index::ConstantOp>(
                     op.getLoc(),
                     rewriter.getIndexAttr(
                         totalAmount < 0 ? -totalAmount : totalAmount))

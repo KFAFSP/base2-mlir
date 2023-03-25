@@ -7,11 +7,8 @@
 #include "base2-mlir/Utils.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/PatternMatch.h"
-#include "mlir/IR/TypeUtilities.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
-
-#include <memory>
 
 using namespace mlir;
 using namespace mlir::bit;

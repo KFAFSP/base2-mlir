@@ -360,6 +360,11 @@ class Bit_ShiftOpBase<string mnemonic, list<Trait> traits = []>
         Optional<Bit_BitSequenceLike>:$funnel);
     let results = (outs Bit_BitSequenceLike:$result);
 
+    let builders = [
+        OpBuilder<(ins "Value":$value, "Value":$amount), [{
+            build($_builder, $_state, value, amount, {});
+        }]>];
+
     let hasCustomAssemblyFormat = 1;
 
     let hasVerifier = 1;

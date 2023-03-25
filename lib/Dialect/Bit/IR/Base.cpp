@@ -46,7 +46,9 @@ Operation* BitDialect::materializeConstant(
     // NOTE: This is one of the workarounds for IntegerAttr also encoding
     //       IndexType values while being a BitSequenceAttr.
     if (type.isa<IndexType>())
-        return builder.create<arith::ConstantOp>(location, value);
+        return builder.create<index::ConstantOp>(
+            location,
+            value.cast<IntegerAttr>());
 
     // Materialize bit sequences using our constant op.
     if (const auto impl = value.dyn_cast<BitSequenceLikeAttr>()) {
