@@ -152,9 +152,9 @@ func.func @xor() -> i64 {
 // CHECK-SAME: %[[ARG0:.+]]: i64
 func.func @shl_trivial(%arg0: i64) -> (i64, i64, i64) {
     // CHECK-DAG: %[[CST0:.+]] = bit.constant 0 : i64
-    %cst0 = arith.constant 0 : index
-    %cst1 = arith.constant 64 : index
-    %cst2 = arith.constant 128 : index
+    %cst0 = index.constant 0
+    %cst1 = index.constant 64
+    %cst2 = index.constant 128
     %0 = bit.shl %arg0, %cst0 : i64
     %1 = bit.shl %arg0, %cst1 : i64
     %2 = bit.shl %arg0:%arg0, %cst2 : i64
@@ -167,7 +167,7 @@ func.func @shl() -> (i16, i16) {
     // CHECK-DAG: %[[SHL:.+]] = bit.constant -17200 : i16
     // CHECK-DAG: %[[ROL:.+]] = bit.constant -17190 : i16
     %value = bit.constant 0xABCD : i16
-    %cst0 = arith.constant 4 : index
+    %cst0 = index.constant 4
     %0 = bit.shl %value, %cst0 : i16
     %1 = bit.shl %value:%value, %cst0 : i16
     // CHECK: return %[[SHL]], %[[ROL]]
@@ -182,9 +182,9 @@ func.func @shl() -> (i16, i16) {
 // CHECK-SAME: %[[ARG0:.+]]: i64
 func.func @shr_trivial(%arg0: i64) -> (i64, i64, i64) {
     // CHECK-DAG: %[[CST0:.+]] = bit.constant 0 : i64
-    %cst0 = arith.constant 0 : index
-    %cst1 = arith.constant 64 : index
-    %cst2 = arith.constant 128 : index
+    %cst0 = index.constant 0
+    %cst1 = index.constant 64
+    %cst2 = index.constant 128
     %0 = bit.shr %arg0, %cst0 : i64
     %1 = bit.shr %arg0, %cst1 : i64
     %2 = bit.shr %arg0:%arg0, %cst2 : i64
@@ -197,7 +197,7 @@ func.func @shr() -> (i16, i16) {
     // CHECK-DAG: %[[SHR:.+]] = bit.constant 2748 : i16
     // CHECK-DAG: %[[ROR:.+]] = bit.constant -9540 : i16
     %value = bit.constant 0xABCD : i16
-    %cst0 = arith.constant 4 : index
+    %cst0 = index.constant 4
     %0 = bit.shr %value, %cst0 : i16
     %1 = bit.shr %value:%value, %cst0 : i16
     // CHECK: return %[[SHR]], %[[ROR]]
@@ -210,9 +210,9 @@ func.func @shr() -> (i16, i16) {
 
 // CHECK-LABEL: func.func @count(
 func.func @count() -> (index, index, index) {
-    // CHECK-DAG: %[[CST0:.+]] = arith.constant 0 : index
-    // CHECK-DAG: %[[CST1:.+]] = arith.constant 16 : index
-    // CHECK-DAG: %[[CST2:.+]] = arith.constant 32 : index
+    // CHECK-DAG: %[[CST0:.+]] = index.constant 0
+    // CHECK-DAG: %[[CST1:.+]] = index.constant 16
+    // CHECK-DAG: %[[CST2:.+]] = index.constant 32
     %cst0 = bit.constant 0 : i16
     %cst1 = bit.constant -1 : i16
     %cst2 = bit.constant -1 : i32
@@ -229,9 +229,9 @@ func.func @count() -> (index, index, index) {
 
 // CHECK-LABEL: func.func @clz(
 func.func @clz() -> (index, index, index) {
-    // CHECK-DAG: %[[CST0:.+]] = arith.constant 0 : index
-    // CHECK-DAG: %[[CST1:.+]] = arith.constant 3 : index
-    // CHECK-DAG: %[[CST2:.+]] = arith.constant 16 : index
+    // CHECK-DAG: %[[CST0:.+]] = index.constant 0
+    // CHECK-DAG: %[[CST1:.+]] = index.constant 3
+    // CHECK-DAG: %[[CST2:.+]] = index.constant 16
     %cst0 = bit.constant -1 : i16
     %cst1 = bit.constant 0x1000 : i16
     %cst2 = bit.constant 0 : i16
@@ -248,9 +248,9 @@ func.func @clz() -> (index, index, index) {
 
 // CHECK-LABEL: func.func @ctz(
 func.func @ctz() -> (index, index, index) {
-    // CHECK-DAG: %[[CST0:.+]] = arith.constant 0 : index
-    // CHECK-DAG: %[[CST1:.+]] = arith.constant 3 : index
-    // CHECK-DAG: %[[CST2:.+]] = arith.constant 16 : index
+    // CHECK-DAG: %[[CST0:.+]] = index.constant 0
+    // CHECK-DAG: %[[CST1:.+]] = index.constant 3
+    // CHECK-DAG: %[[CST2:.+]] = index.constant 16
     %cst0 = bit.constant -1 : i16
     %cst1 = bit.constant 0x0008 : i16
     %cst2 = bit.constant 0 : i16

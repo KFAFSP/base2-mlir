@@ -19,11 +19,11 @@ namespace mlir {
 
 namespace bit {
 
-/// Adds the lower-bitwise pass patterns to @p patterns .
-void populateLowerBitwisePatterns(RewritePatternSet &patterns);
+/// Adds the lower-funnel-shift pass patterns to @p patterns .
+void populateLowerFunnelShiftPatterns(RewritePatternSet &patterns);
 
-/// Constructs the lower-bitwise pass.
-std::unique_ptr<Pass> createLowerBitwisePass();
+/// Constructs the lower-funnel-shift pass.
+std::unique_ptr<Pass> createLowerFunnelShiftPass();
 
 //===----------------------------------------------------------------------===//
 // Registration

@@ -174,9 +174,9 @@ func.func @shl_zero_funnel(%arg0: i64, %arg1: index) -> (i64) {
 // CHECK-LABEL: func.func @shl_balance_rot
 // CHECK-SAME: %[[ARG0:.+]]: i64
 func.func @shl_balance_rot(%arg0: i64) -> (i64, i64, i64) {
-    // CHECK-DAG: %[[CST0:.+]] = arith.constant 8 : index
-    %cst0 = arith.constant 4 : index
-    %cst1 = arith.constant 12 : index
+    // CHECK-DAG: %[[CST0:.+]] = index.constant 8
+    %cst0 = index.constant 4
+    %cst1 = index.constant 12
     %0 = bit.shl %arg0:%arg0, %cst0 : i64
     %1 = bit.shl %0:%0, %cst0 : i64
     // CHECK-DAG: %[[ROT0:.+]] = bit.shl %[[ARG0]]:%[[ARG0]], %[[CST0]]
@@ -205,9 +205,9 @@ func.func @shr_zero_funnel(%arg0: i64, %arg1: index) -> (i64) {
 // CHECK-LABEL: func.func @shr_balance_rot
 // CHECK-SAME: %[[ARG0:.+]]: i64
 func.func @shr_balance_rot(%arg0: i64) -> (i64, i64, i64) {
-    // CHECK-DAG: %[[CST0:.+]] = arith.constant 8 : index
-    %cst0 = arith.constant 4 : index
-    %cst1 = arith.constant 12 : index
+    // CHECK-DAG: %[[CST0:.+]] = index.constant 8
+    %cst0 = index.constant 4
+    %cst1 = index.constant 12
     %0 = bit.shr %arg0:%arg0, %cst0 : i64
     %1 = bit.shr %0:%0, %cst0 : i64
     // CHECK-DAG: %[[ROT0:.+]] = bit.shr %[[ARG0]]:%[[ARG0]], %[[CST0]]

@@ -9,17 +9,15 @@
 
 include "mlir/Pass/PassBase.td"
 
-def LowerBitwise : Pass<"lower-bitwise", "ModuleOp"> {
-    let summary = "Lowers bitwise operations to signless integers";
+def LowerFunnelShift : Pass<"lower-funnel-shift", "ModuleOp"> {
+    let summary = "Lowers funnel shift operations to shift and or";
     let description = [{
-        This pass ensures that all bitwise operations are performed on signless
-        integers, making all bit casts explicit.
-
-        The affected operations are `bit.cmp`, `bit.and`, `bit.or`, `bit.xor`,
-        `bit.shl`, `bit.shr`, `bit.count`, `bit.clz` and `bit.ctz`.
+        This pass implements a workaround for the missing LLVM dialect
+        intrinsics `llvm.fsh?.*` funnel shift intrinsics. It replaces these
+        shifts using normal shifts and bitwise or.
     }];
 
-    let constructor = "mlir::bit::createLowerBitwisePass()";
+    let constructor = "mlir::bit::createLowerFunnelShiftPass()";
 }
 
 #endif
