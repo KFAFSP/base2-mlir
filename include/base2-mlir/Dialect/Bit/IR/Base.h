@@ -7,6 +7,7 @@
 
 #include "base2-mlir/Dialect/Bit/Enums.h"
 #include "base2-mlir/Dialect/Bit/Interfaces/Interfaces.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Dialect.h"

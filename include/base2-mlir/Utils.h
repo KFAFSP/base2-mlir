@@ -39,4 +39,22 @@ namespace mlir::ext {
     return value;
 }
 
+/// Obtains the Attribute ConstantLike definition value of @p value .
+///
+/// @pre    `value`
+[[nodiscard]] inline Attribute getConstantValue(Value value)
+{
+    assert(value);
+
+    const auto def = value.getDefiningOp();
+    if (!def || !def->hasTrait<OpTrait::ConstantLike>()) return Attribute{};
+
+    SmallVector<OpFoldResult> folded;
+    const auto result = def->fold(std::nullopt, folded);
+    assert(succeeded(result));
+    assert(folded.size() == 1);
+
+    return folded.front().dyn_cast<Attribute>();
+}
+
 } // namespace mlir::ext

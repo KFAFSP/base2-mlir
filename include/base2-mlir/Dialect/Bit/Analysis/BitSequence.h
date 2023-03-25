@@ -30,6 +30,8 @@ concept bit_sequence =
 
 /// Type that can hold the size of a bit sequence.
 using bit_width_t = unsigned int;
+/// Maximum value of the bit_width_t type.
+static constexpr auto max_bit_width = std::numeric_limits<bit_width_t>::max();
 
 /// Compile-time constant indicating the length of @p BitSequence .
 template<bit_sequence BitSequence>

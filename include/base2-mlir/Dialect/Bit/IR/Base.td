@@ -23,6 +23,10 @@ def Bit_Dialect : Dialect {
         attributes and operations for declaring, examining and computing them.
     }];
 
+    let dependentDialects = [
+        "arith::ArithDialect"
+    ];
+
     let hasConstantMaterializer = 1;
     let useDefaultAttributePrinterParser = 1;
     let useFoldAPI = kEmitFoldAdaptorFolder;

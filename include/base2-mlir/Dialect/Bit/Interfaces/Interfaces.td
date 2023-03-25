@@ -10,5 +10,6 @@
 include "base2-mlir/Dialect/Bit/Interfaces/BitSequenceAttr.td"
 include "base2-mlir/Dialect/Bit/Interfaces/BitSequenceType.td"
 include "base2-mlir/Dialect/Bit/Interfaces/LogicOp.td"
+include "base2-mlir/Dialect/Bit/Interfaces/ShiftOp.td"
 
 #endif

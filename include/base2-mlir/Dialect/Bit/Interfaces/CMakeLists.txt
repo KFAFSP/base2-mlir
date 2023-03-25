@@ -1,6 +1,7 @@
 mlir_gen_iface(Bit BitSequenceAttr attr)
 mlir_gen_iface(Bit BitSequenceType type)
 mlir_gen_iface(Bit LogicOp op)
+mlir_gen_iface(Bit ShiftOp op)
 
 add_mlir_doc(Interfaces BitAttrInterfaces Interfaces/ -gen-attr-interface-docs)
 add_mlir_doc(Interfaces BitTypeInterfaces Interfaces/ -gen-type-interface-docs)

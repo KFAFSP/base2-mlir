@@ -8,3 +8,4 @@
 #include "base2-mlir/Dialect/Bit/Interfaces/BitSequenceAttr.h"
 #include "base2-mlir/Dialect/Bit/Interfaces/BitSequenceType.h"
 #include "base2-mlir/Dialect/Bit/Interfaces/LogicOp.h"
+#include "base2-mlir/Dialect/Bit/Interfaces/ShiftOp.h"

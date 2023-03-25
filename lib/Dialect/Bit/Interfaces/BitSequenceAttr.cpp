@@ -295,6 +295,10 @@ struct FloatModel : BitSequenceAttr::ExternalModel<FloatModel, FloatAttr> {
 struct IntModel : BitSequenceAttr::ExternalModel<IntModel, IntegerAttr> {
     static BitSequenceType getType(Attribute attr)
     {
+        // NOTE: IntegerAttr also stores IndexType. This break the whole
+        //       interface-based opt-in mechanism, because we can't decline at
+        //       this point.
+        // BUG:  Disallow IndexType without crashing.
         return attr.cast<IntegerAttr>().getType().cast<BitSequenceType>();
     }
     static BitSequence getValue(Attribute attr)

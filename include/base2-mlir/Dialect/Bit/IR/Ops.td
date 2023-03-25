@@ -303,4 +303,108 @@ def Bit_XorOp : Bit_LogicOpBase<"xor", [Commutative]> {
     }];
 }
 
+//===----------------------------------------------------------------------===//
+// Shifting operations
+//===----------------------------------------------------------------------===//
+
+// Template for shifting operations.
+class Bit_ShiftOpBase<string mnemonic, list<Trait> traits = []>
+        : Bit_Op<
+            mnemonic,
+            traits
+                # [
+                    Pure,
+                    OpAsmOpInterface,
+                    Bit_ShiftOp,
+                    AllTypesMatch<["value", "result"]>]
+                # ElementwiseMappable.traits> {
+    let arguments = (ins
+        Bit_BitSequenceLike:$value,
+        Index:$amount,
+        Optional<Bit_BitSequenceLike>:$funnel);
+    let results = (outs Bit_BitSequenceLike:$result);
+
+    let hasCustomAssemblyFormat = 1;
+
+    let hasVerifier = 1;
+    let hasFolder = 1;
+    let hasCanonicalizer = 1;
+}
+
+def Bit_ShlOp : Bit_ShiftOpBase<"shl"> {
+    let summary = "Bitwise left shift";
+    let description = [{
+        The `shl` operation obtains a new bit sequence in which all bits are
+        shifted towards the left (logical MSB) by a specified amount. The bits
+        that are shifted past the leftmost bit are lost. If no optional funnel
+        operand is specified, the bits that are shifted in from the rightmost
+        bit are 0.
+
+        If a funnel argument is specified, the shifted-in bits are the ones
+        which are shifted out from the funnel. In other words, the value and
+        the funnel are concatenated, the shift is performed, and the MSB with
+        the width of the value is extracted.
+
+        Syntax:
+
+        ```
+        shl-op ::= `shl` $value (`:` $funnel)? `,` $amount `:` type(result)
+        ```
+
+        Example:
+
+        ```
+        %x = bit.shl %value, %amount : i16
+        %y = bit.shl %value:%funnel, %amount : i16
+        ```
+    }];
+
+    code extraClassDeclaration = [{
+    public:
+        //===--------------------------------------------------------------===//
+        // ShiftOp
+        //===--------------------------------------------------------------===//
+
+        ShiftDirection getDirection() { return ShiftDirection::Left; }
+    }];
+}
+
+def Bit_ShrOp : Bit_ShiftOpBase<"shr"> {
+    let summary = "Bitwise right shift";
+    let description = [{
+        The `shr` operation obtains a new bit sequence in which all bits are
+        shifted towards the right (logical LSB) by a specified amount. The bits
+        that are shifted past the rightmost bit are lost. If no optional funnel
+        operand is specified, the bits that are shifted in from the leftmost
+        bit are 0.
+
+        If a funnel argument is specified, the shifted-in bits are the ones
+        which are shifted out from the funnel. In other words, the funnel and
+        the value are concatenated, the shift is performed, and the LSB with the
+        width of the value is extracted.
+
+        Syntax:
+
+        ```
+        shr-op ::= `shr` ($funnel `:`)? $value `,` $amount `:` type(result)
+        ```
+
+        Example:
+
+        ```
+        %x = bit.shr %value, %amount : i16
+        %y = bit.shr %funnel:%value, %amount : i16
+        ```
+    }];
+
+    code extraClassDeclaration = [{
+    public:
+        //===--------------------------------------------------------------===//
+        // ShiftOp
+        //===--------------------------------------------------------------===//
+
+        ShiftDirection getDirection() { return ShiftDirection::Right; }
+    }];
+}
+
 #endif

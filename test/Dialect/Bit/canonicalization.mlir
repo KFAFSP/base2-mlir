@@ -155,3 +155,65 @@ func.func @xor_trivial_container(%arg0: tensor<3xi64>) -> tensor<3xi64> {
     // CHECK: return %[[CST0]]
     return %0 : tensor<3xi64>
 }
+
+//===----------------------------------------------------------------------===//
+// shl
+//===----------------------------------------------------------------------===//
+
+// CHECK-LABEL: func.func @shl_zero_funnel(
+// CHECK-SAME: %[[ARG0:.+]]: i64,
+// CHECK-SAME: %[[ARG1:.+]]: index
+func.func @shl_zero_funnel(%arg0: i64, %arg1: index) -> (i64) {
+    %cst0 = bit.constant 0 : i64
+    // CHECK: %[[RES:.+]] = bit.shl %[[ARG0]], %[[ARG1]]
+    %0 = bit.shl %arg0:%cst0, %arg1 : i64
+    // CHECK: return %[[RES]]
+    return %0 : i64
+}
+
+// CHECK-LABEL: func.func @shl_balance_rot
+// CHECK-SAME: %[[ARG0:.+]]: i64
+func.func @shl_balance_rot(%arg0: i64) -> (i64, i64, i64) {
+    // CHECK-DAG: %[[CST0:.+]] = arith.constant 8 : index
+    %cst0 = arith.constant 4 : index
+    %cst1 = arith.constant 12 : index
+    %0 = bit.shl %arg0:%arg0, %cst0 : i64
+    %1 = bit.shl %0:%0, %cst0 : i64
+    // CHECK-DAG: %[[ROT0:.+]] = bit.shl %[[ARG0]]:%[[ARG0]], %[[CST0]]
+    %2 = bit.shr %0:%0, %cst0 : i64
+    %3 = bit.shr %0:%0, %cst1 : i64
+    // CHECK-DAG: %[[ROT1:.+]] = bit.shr %[[ARG0]]:%[[ARG0]], %[[CST0]]
+    // CHECK: return %[[ROT0]], %[[ARG0]], %[[ROT1]]
+    return %1, %2, %3 : i64, i64, i64
+}
+
+//===----------------------------------------------------------------------===//
+// shr
+//===----------------------------------------------------------------------===//
+
+// CHECK-LABEL: func.func @shr_zero_funnel(
+// CHECK-SAME: %[[ARG0:.+]]: i64,
+// CHECK-SAME: %[[ARG1:.+]]: index
+func.func @shr_zero_funnel(%arg0: i64, %arg1: index) -> (i64) {
+    %cst0 = bit.constant 0 : i64
+    // CHECK: %[[RES:.+]] = bit.shr %[[ARG0]], %[[ARG1]]
+    %0 = bit.shr %cst0:%arg0, %arg1 : i64
+    // CHECK: return %[[RES]]
+    return %0 : i64
+}
+
+// CHECK-LABEL: func.func @shr_balance_rot
+// CHECK-SAME: %[[ARG0:.+]]: i64
+func.func @shr_balance_rot(%arg0: i64) -> (i64, i64, i64) {
+    // CHECK-DAG: %[[CST0:.+]] = arith.constant 8 : index
+    %cst0 = arith.constant 4 : index
+    %cst1 = arith.constant 12 : index
+    %0 = bit.shr %arg0:%arg0, %cst0 : i64
+    %1 = bit.shr %0:%0, %cst0 : i64
+    // CHECK-DAG: %[[ROT0:.+]] = bit.shr %[[ARG0]]:%[[ARG0]], %[[CST0]]
+    %2 = bit.shl %0:%0, %cst0 : i64
+    %3 = bit.shl %0:%0, %cst1 : i64
+    // CHECK-DAG: %[[ROT1:.+]] = bit.shl %[[ARG0]]:%[[ARG0]], %[[CST0]]
+    // CHECK: return %[[ROT0]], %[[ARG0]], %[[ROT1]]
+    return %1, %2, %3 : i64, i64, i64
+}

@@ -197,3 +197,119 @@ OpFoldResult BitFolder::bitXor(OpFoldResult lhs, BitSequenceLikeAttr rhs)
 
     return OpFoldResult{};
 }
+
+BitSequenceLikeAttr BitFolder::bitShl(
+    BitSequenceLikeAttr value,
+    bit_width_t amount,
+    BitSequenceLikeAttr funnel)
+{
+    assert(value);
+    assert(!funnel || (value.getType() == funnel.getType()));
+    const auto elTy = value.getType().getElementType();
+    const auto bitWidth = elTy.getBitWidth();
+
+    if (amount == 0) return value;
+    if (amount >= 2 * bitWidth || (!funnel && amount >= bitWidth))
+        return BitSequenceLikeAttr::getSplat(
+            value.getType(),
+            BitSequence::zeros(bitWidth));
+
+    if (!funnel)
+        return value.map([&](const BitSequence &v) -> BitSequence {
+            return v.asUInt().shl(amount);
+        });
+
+    return value.zip(
+        [&](BitSequence v, BitSequence f) -> BitSequence {
+            auto result = v.asUInt().concat(f.asUInt()).shl(amount);
+            result.lshrInPlace(bitWidth);
+            return result.trunc(bitWidth);
+        },
+        funnel);
+}
+
+OpFoldResult
+BitFolder::bitShl(OpFoldResult value, bit_width_t amount, OpFoldResult funnel)
+{
+    assert(value);
+    const auto attr =
+        value.dyn_cast<Attribute>().dyn_cast_or_null<BitSequenceLikeAttr>();
+    const auto valueTy =
+        attr ? attr.getType()
+             : value.dyn_cast<Value>().getType().cast<BitSequenceLikeType>();
+    const auto elTy = valueTy.getElementType();
+    const auto bitWidth = elTy.getBitWidth();
+
+    if (amount == 0) return value;
+    if (amount >= 2 * bitWidth || (!funnel && amount >= bitWidth))
+        return BitSequenceLikeAttr::getSplat(
+            valueTy,
+            BitSequence::zeros(bitWidth));
+
+    if (!attr) return OpFoldResult{};
+    if (!funnel) return bitShl(attr, amount);
+
+    const auto funnelAttr =
+        funnel.dyn_cast<Attribute>().dyn_cast_or_null<BitSequenceLikeAttr>();
+    if (!funnelAttr) return OpFoldResult{};
+
+    return bitShl(attr, amount, funnelAttr);
+}
+
+BitSequenceLikeAttr BitFolder::bitShr(
+    BitSequenceLikeAttr value,
+    bit_width_t amount,
+    BitSequenceLikeAttr funnel)
+{
+    assert(value);
+    assert(!funnel || (value.getType() == funnel.getType()));
+    const auto elTy = value.getType().getElementType();
+    const auto bitWidth = elTy.getBitWidth();
+
+    if (amount == 0) return value;
+    if (amount >= 2 * bitWidth || (!funnel && amount >= bitWidth))
+        return BitSequenceLikeAttr::getSplat(
+            value.getType(),
+            BitSequence::zeros(bitWidth));
+
+    if (!funnel)
+        return value.map([&](const BitSequence &v) -> BitSequence {
+            return v.asUInt().lshr(amount);
+        });
+
+    return value.zip(
+        [&](BitSequence v, BitSequence f) -> BitSequence {
+            auto result = f.asUInt().concat(v.asUInt());
+            result.lshrInPlace(amount);
+            return result.trunc(bitWidth);
+        },
+        funnel);
+}
+
+OpFoldResult
+BitFolder::bitShr(OpFoldResult value, bit_width_t amount, OpFoldResult funnel)
+{
+    assert(value);
+    const auto attr =
+        value.dyn_cast<Attribute>().dyn_cast_or_null<BitSequenceLikeAttr>();
+    const auto valueTy =
+        attr ? attr.getType()
+             : value.dyn_cast<Value>().getType().cast<BitSequenceLikeType>();
+    const auto elTy = valueTy.getElementType();
+    const auto bitWidth = elTy.getBitWidth();
+
+    if (amount == 0) return value;
+    if (amount >= 2 * bitWidth || (!funnel && amount >= bitWidth))
+        return BitSequenceLikeAttr::getSplat(
+            valueTy,
+            BitSequence::zeros(bitWidth));
+
+    if (!attr) return OpFoldResult{};
+    if (!funnel) return bitShr(attr, amount);
+
+    const auto funnelAttr =
+        funnel.dyn_cast<Attribute>().dyn_cast_or_null<BitSequenceLikeAttr>();
+    if (!funnelAttr) return OpFoldResult{};
+
+    return bitShr(attr, amount, funnelAttr);
+}

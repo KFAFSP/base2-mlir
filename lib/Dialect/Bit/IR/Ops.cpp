@@ -190,9 +190,8 @@ struct BooleanComparison : OpRewritePattern<CmpOp> {
         // Look for an operation on booleans with a right-hand constant.
         if (!op.getLhs().getType().getElementType().isSignlessInteger(1))
             return failure();
-        auto rhsDef = op.getRhs().getDefiningOp<ConstantOp>();
-        if (!rhsDef) return failure();
-        const auto rhsAttr = rhsDef.getValue();
+        const auto rhsAttr = getConstantValue(op.getRhs());
+        if (!rhsAttr) return failure();
 
         // Determine the splat value of the right-hand constant.
         bool rhsVal;
@@ -242,8 +241,7 @@ void CmpOp::getCanonicalizationPatterns(
 void SelectOp::print(OpAsmPrinter &p)
 {
     // $condition `,` $trueValue `,` $falseValue
-    p << " ";
-    p.printOperands(getOperands());
+    p << " " << getOperands();
 
     // attr-dict
     p.printOptionalAttrDict((*this)->getAttrs());
@@ -364,6 +362,298 @@ OpFoldResult XorOp::fold(XorOp::FoldAdaptor adaptor)
 
     // Otherwise no folding is performed.
     return OpFoldResult{};
+}
+
+//===----------------------------------------------------------------------===//
+// Shifting operations
+//===----------------------------------------------------------------------===//
+
+namespace {
+
+template<class Op>
+struct ZeroFunnel : OpRewritePattern<Op> {
+    using OpRewritePattern<Op>::OpRewritePattern;
+
+    LogicalResult
+    matchAndRewrite(Op op, PatternRewriter &rewriter) const override
+    {
+        // Look for a constant zeros funnel.
+        const auto funnel = op.getFunnel();
+        if (!funnel) return failure();
+        const auto funnelAttr =
+            cast_or_null<BitSequenceAttr>(getConstantValue(funnel));
+        if (!funnelAttr || !funnelAttr.getValue().isZeros()) return failure();
+
+        // Remove the funnel operand.
+        const auto resultOp = rewriter.replaceOpWithNewOp<Op>(
+            op,
+            op.getValue(),
+            op.getAmount(),
+            Value{});
+        resultOp->setAttrs(op->getAttrs());
+        return success();
+    }
+};
+
+template<class Op, class Inv>
+struct BalanceRotations : OpRewritePattern<Op> {
+    using OpRewritePattern<Op>::OpRewritePattern;
+
+    LogicalResult
+    matchAndRewrite(Op op, PatternRewriter &rewriter) const override
+    {
+        // Only applies to chained bit rotations.
+        if (op.getValue() != op.getFunnel()) return failure();
+        auto src = op.getValue().template getDefiningOp<ShiftOp>();
+        if (!src || (src.getValue() != src.getFunnel())) return failure();
+
+        // Remove trivial inverse rotations.
+        if (op.getAmount() == src.getAmount()
+            && op.getDirection() != src.getDirection()) {
+            rewriter.replaceOp(op, src.getValue());
+            return success();
+        }
+
+        // Operate on known shift amounts only.
+        const auto amountAttr = getConstantValue(op.getAmount())
+                                    .template dyn_cast_or_null<IntegerAttr>();
+        const auto srcAmountAttr =
+            getConstantValue(src.getAmount())
+                .template dyn_cast_or_null<IntegerAttr>();
+        if (!amountAttr || !srcAmountAttr) return failure();
+
+        // Operate on well-formed rotations only.
+        const auto bitWidth = op.getType()
+                                  .template cast<BitSequenceLikeType>()
+                                  .getElementType()
+                                  .getBitWidth();
+        const auto amount = amountAttr.getValue().getZExtValue();
+        const auto srcAmount = srcAmountAttr.getValue().getZExtValue();
+        if (amount > bitWidth || srcAmount > bitWidth) return failure();
+
+        // Compute the rotation amount relative to the source.
+        using amount_t = std::make_signed_t<bit_width_t>;
+        auto totalAmount = static_cast<amount_t>(amount);
+        if (op.getDirection() != src.getDirection())
+            totalAmount -= srcAmount;
+        else
+            totalAmount += srcAmount;
+        totalAmount %= bitWidth;
+
+        // Handle trivial case.
+        if (totalAmount == 0) {
+            rewriter.replaceOp(op, src.getValue());
+            return success();
+        }
+
+        // Generate shortened rotation.
+        const auto totalAmountVal =
+            rewriter
+                .create<arith::ConstantOp>(
+                    op.getLoc(),
+                    rewriter.getIndexAttr(
+                        totalAmount < 0 ? -totalAmount : totalAmount))
+                .getResult();
+        if (totalAmount > 0)
+            rewriter.replaceOpWithNewOp<Op>(
+                op,
+                src.getValue(),
+                totalAmountVal,
+                src.getValue());
+        else
+            rewriter.replaceOpWithNewOp<Inv>(
+                op,
+                src.getValue(),
+                totalAmountVal,
+                src.getValue());
+        return success();
+    }
+};
+
+} // namespace
+
+void ShlOp::print(OpAsmPrinter &p)
+{
+    // $value
+    p << " " << getValue();
+
+    // (`:` $funnel)?
+    if (auto funnel = getFunnel()) p << ":" << funnel;
+
+    // `,` $amount
+    p << ", " << getAmount();
+
+    // attr-dict
+    p.printOptionalAttrDict((*this)->getAttrs());
+
+    // `:` type($result)
+    p << " : " << getType();
+}
+
+ParseResult ShlOp::parse(OpAsmParser &p, OperationState &result)
+{
+    // $value
+    OpAsmParser::UnresolvedOperand value, funnel, amount;
+    if (p.parseOperand(value)) return failure();
+
+    // (`:` $funnel)?
+    auto hasFunnel = !p.parseOptionalColon();
+    if (hasFunnel) {
+        if (p.parseOperand(funnel)) return failure();
+    }
+
+    // `,` $amount
+    if (p.parseComma()) return failure();
+    if (p.parseOperand(amount)) return failure();
+
+    // attr-dict
+    if (p.parseOptionalAttrDict(result.attributes)) return failure();
+
+    // `:` type($result)
+    if (p.parseColon()) return failure();
+    if (p.parseType(result.types.emplace_back())) return failure();
+
+    // Resolve operands
+    if (p.resolveOperand(value, result.types.front(), result.operands))
+        return failure();
+    if (p.resolveOperand(
+            amount,
+            p.getBuilder().getIndexType(),
+            result.operands))
+        return failure();
+    if (hasFunnel) {
+        if (p.resolveOperand(funnel, result.types.front(), result.operands))
+            return failure();
+    }
+
+    return success();
+}
+
+LogicalResult ShlOp::verify()
+{
+    if (auto funnel = getFunnel()) {
+        if (funnel.getType() != getType())
+            return emitOpError()
+                   << "funnel must have result type (" << funnel.getType()
+                   << " != " << getType() << ")";
+    }
+
+    return success();
+}
+
+void ShlOp::getCanonicalizationPatterns(
+    RewritePatternSet &patterns,
+    MLIRContext* context)
+{
+    patterns.add<ZeroFunnel<ShlOp>, BalanceRotations<ShlOp, ShrOp>>(context);
+}
+
+OpFoldResult ShlOp::fold(ShlOp::FoldAdaptor adaptor)
+{
+    // Shift amount must be known to perform folding.
+    const auto amountAttr = adaptor.getAmount().dyn_cast_or_null<IntegerAttr>();
+    if (!amountAttr) return OpFoldResult{};
+    assert(amountAttr.getType().isIndex());
+    const auto amount = amountAttr.getValue().getZExtValue();
+    if (amount > max_bit_width) return OpFoldResult{};
+
+    // Delegate to BitFolder.
+    return BitFolder::bitShl(
+        combine(adaptor.getValue(), getValue()),
+        static_cast<bit_width_t>(amount),
+        combine(adaptor.getFunnel(), getFunnel()));
+}
+
+void ShrOp::print(OpAsmPrinter &p)
+{
+    p << " ";
+
+    // ($funnel `:`)?
+    if (auto funnel = getFunnel()) p << funnel << ":";
+
+    // $value `,` $amount
+    p << getValue() << ", " << getAmount();
+
+    // attr-dict
+    p.printOptionalAttrDict((*this)->getAttrs());
+
+    // `:` type($result)
+    p << " : " << getType();
+}
+
+ParseResult ShrOp::parse(OpAsmParser &p, OperationState &result)
+{
+    // ($funnel `:`)?
+    OpAsmParser::UnresolvedOperand value, funnel, amount;
+    if (p.parseOperand(value)) return failure();
+
+    // $value
+    auto hasFunnel = !p.parseOptionalColon();
+    if (hasFunnel) {
+        funnel = value;
+        if (p.parseOperand(value)) return failure();
+    }
+
+    // `,` $amount
+    if (p.parseComma()) return failure();
+    if (p.parseOperand(amount)) return failure();
+
+    // attr-dict
+    if (p.parseOptionalAttrDict(result.attributes)) return failure();
+
+    // `:` type($result)
+    if (p.parseColon()) return failure();
+    if (p.parseType(result.types.emplace_back())) return failure();
+
+    // Resolve operands.
+    if (p.resolveOperand(value, result.types.front(), result.operands))
+        return failure();
+    if (p.resolveOperand(
+            amount,
+            p.getBuilder().getIndexType(),
+            result.operands))
+        return failure();
+    if (hasFunnel) {
+        if (p.resolveOperand(funnel, result.types.front(), result.operands))
+            return failure();
+    }
+
+    return success();
+}
+
+LogicalResult ShrOp::verify()
+{
+    if (auto funnel = getFunnel()) {
+        if (funnel.getType() != getType())
+            return emitOpError()
+                   << "funnel must have result type (" << funnel.getType()
+                   << " != " << getType() << ")";
+    }
+
+    return success();
+}
+
+OpFoldResult ShrOp::fold(ShrOp::FoldAdaptor adaptor)
+{
+    // Shift amount must be known to perform folding.
+    const auto amountAttr = adaptor.getAmount().dyn_cast_or_null<IntegerAttr>();
+    if (!amountAttr) return OpFoldResult{};
+    assert(amountAttr.getType().isIndex());
+    const auto amount = amountAttr.getValue().getZExtValue();
+    if (amount > max_bit_width) return OpFoldResult{};
+
+    // Delegate to BitFolder.
+    return BitFolder::bitShr(
+        combine(adaptor.getValue(), getValue()),
+        static_cast<bit_width_t>(amount),
+        combine(adaptor.getFunnel(), getFunnel()));
+}
+
+void ShrOp::getCanonicalizationPatterns(
+    RewritePatternSet &patterns,
+    MLIRContext* context)
+{
+    patterns.add<ZeroFunnel<ShrOp>, BalanceRotations<ShrOp, ShlOp>>(context);
 }
 
 //===----------------------------------------------------------------------===//

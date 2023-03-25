@@ -16,18 +16,18 @@ namespace mlir::bit {
 class BitFolder {
 public:
     /// Creates a constant boolean @p value .
-    static BitSequenceAttr makeBool(MLIRContext &ctx, bool value)
+    [[nodiscard]] static BitSequenceAttr makeBool(MLIRContext &ctx, bool value)
     {
         const auto i1Ty = IntegerType::get(&ctx, 1);
         return BitSequenceAttr::get(i1Ty, BitSequence(value));
     }
     /// Creates a constant false boolean value.
-    static BitSequenceAttr makeFalse(MLIRContext &ctx)
+    [[nodiscard]] static BitSequenceAttr makeFalse(MLIRContext &ctx)
     {
         return makeBool(ctx, false);
     }
     /// Creates a constant true boolean value.
-    static BitSequenceAttr makeTrue(MLIRContext &ctx)
+    [[nodiscard]] static BitSequenceAttr makeTrue(MLIRContext &ctx)
     {
         return makeBool(ctx, true);
     }
@@ -37,7 +37,7 @@ public:
     /// @pre    `in && resultTy`
     /// @pre    bit widths of @p in and @p resultTy match
     /// @pre    shapes of @p in and @p resultTy match
-    static BitSequenceLikeAttr
+    [[nodiscard]] static BitSequenceLikeAttr
     bitCast(BitSequenceLikeAttr in, BitSequenceLikeType resultTy);
 
     /// Folds a bitwise comparison.
@@ -45,7 +45,7 @@ public:
     /// @pre    `lhs && rhs`
     /// @pre    bit widths of @p lhs and @p rhs match
     /// @pre    shapes of @p lhs and @p rhs match
-    static BitSequenceLikeAttr bitCmp(
+    [[nodiscard]] static BitSequenceLikeAttr bitCmp(
         EqualityPredicate predicate,
         BitSequenceLikeAttr lhs,
         BitSequenceLikeAttr rhs);
@@ -57,7 +57,7 @@ public:
     /// @pre    `trueValue.getElementType() == falseValue.getElementType()`
     /// @pre    shapes of @p trueValue and @p falseValue match
     /// @pre    @p condition is scalar, or matches the shape of @p trueValue
-    static BitSequenceLikeAttr bitSelect(
+    [[nodiscard]] static BitSequenceLikeAttr bitSelect(
         BitSequenceLikeAttr condition,
         BitSequenceLikeAttr trueValue,
         BitSequenceLikeAttr falseValue);
@@ -68,7 +68,7 @@ public:
     /// @pre    @p trueValue and @p falseValue have the same element type
     /// @pre    shapes of @p trueValue and @p falseValue match
     /// @pre    @p condition is scalar, or matches the shape of @p trueValue
-    static OpFoldResult bitSelect(
+    [[nodiscard]] static OpFoldResult bitSelect(
         BitSequenceLikeAttr condition,
         OpFoldResult trueValue,
         OpFoldResult falseValue);
@@ -76,43 +76,76 @@ public:
     /// Folds a bitwise complement operator.
     ///
     /// @pre    `value`
-    static BitSequenceLikeAttr bitCmpl(BitSequenceLikeAttr value);
+    [[nodiscard]] static BitSequenceLikeAttr bitCmpl(BitSequenceLikeAttr value);
 
     /// Folds a bitwise logical and operator.
     ///
     /// @pre    `lhs && rhs`
     /// @pre    `lhs.getType() == rhs.getType()`
-    static BitSequenceLikeAttr
+    [[nodiscard]] static BitSequenceLikeAttr
     bitAnd(BitSequenceLikeAttr lhs, BitSequenceLikeAttr rhs);
     /// Folds a bitwise logical and operator.
     ///
     /// @pre    `lhs && rhs`
     /// @pre    @p lhs and @p rhs have the same element type
-    static OpFoldResult bitAnd(OpFoldResult lhs, BitSequenceLikeAttr rhs);
+    [[nodiscard]] static OpFoldResult
+    bitAnd(OpFoldResult lhs, BitSequenceLikeAttr rhs);
 
     /// Folds a bitwise logical or operator.
     ///
     /// @pre    `lhs && rhs`
     /// @pre    `lhs.getType() == rhs.getType()`
-    static BitSequenceLikeAttr
+    [[nodiscard]] static BitSequenceLikeAttr
     bitOr(BitSequenceLikeAttr lhs, BitSequenceLikeAttr rhs);
     /// Folds a bitwise logical or operator.
     ///
     /// @pre    `lhs && rhs`
     /// @pre    @p lhs and @p rhs have the same element type
-    static OpFoldResult bitOr(OpFoldResult lhs, BitSequenceLikeAttr rhs);
+    [[nodiscard]] static OpFoldResult
+    bitOr(OpFoldResult lhs, BitSequenceLikeAttr rhs);
 
     /// Folds a bitwise logical exclusive or operator.
     ///
     /// @pre    `lhs && rhs`
     /// @pre    `lhs.getType() == rhs.getType()`
-    static BitSequenceLikeAttr
+    [[nodiscard]] static BitSequenceLikeAttr
     bitXor(BitSequenceLikeAttr lhs, BitSequenceLikeAttr rhs);
     /// Folds a bitwise logical exclusive or operator.
     ///
     /// @pre    `lhs && rhs`
     /// @pre    @p lhs and @p rhs have the same element type
-    static OpFoldResult bitXor(OpFoldResult lhs, BitSequenceLikeAttr rhs);
+    [[nodiscard]] static OpFoldResult
+    bitXor(OpFoldResult lhs, BitSequenceLikeAttr rhs);
+
+    /// Folds a left shift operator.
+    ///
+    /// @pre    `value`
+    /// @pre    `!funnel || (value.getType() == funnel.getType())`
+    [[nodiscard]] static BitSequenceLikeAttr bitShl(
+        BitSequenceLikeAttr value,
+        bit_width_t amount,
+        BitSequenceLikeAttr funnel = {});
+    /// Folds a left shift operator.
+    ///
+    /// @pre    `value`
+    /// @pre    @p funnel is empty or has the same type as @p value
+    [[nodiscard]] static OpFoldResult
+    bitShl(OpFoldResult value, bit_width_t amount, OpFoldResult funnel = {});
+
+    /// Folds a right shift operator.
+    ///
+    /// @pre    `value`
+    /// @pre    `!funnel || (value.getType() == funnel.getType())`
+    [[nodiscard]] static BitSequenceLikeAttr bitShr(
+        BitSequenceLikeAttr value,
+        bit_width_t amount,
+        BitSequenceLikeAttr funnel = {});
+    /// Folds a right shift operator.
+    ///
+    /// @pre    `value`
+    /// @pre    @p funnel is empty or has the same type as @p value
+    [[nodiscard]] static OpFoldResult
+    bitShr(OpFoldResult value, bit_width_t amount, OpFoldResult funnel = {});
 };
 
 } // namespace mlir::bit
