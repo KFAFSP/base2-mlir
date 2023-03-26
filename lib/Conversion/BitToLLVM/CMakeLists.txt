@@ -11,6 +11,5 @@ add_mlir_conversion_library(BitToLLVM
         MLIRDialectUtils
         MLIRTransformUtils
         MLIRLLVMDialect
-        MLIRIndexDialect
         BitDialect
 )
