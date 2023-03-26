@@ -64,6 +64,9 @@ void BitDialect::initialize()
     registerAttributes();
     registerOps();
 
+    // Implement the inliner interface.
+    addInterfaces<BitInlinerInterface>();
+
     // Implement interfaces for built-in types.
     registerBitSequenceAttrModels(*getContext());
     registerBitSequenceTypeModels(*getContext());
