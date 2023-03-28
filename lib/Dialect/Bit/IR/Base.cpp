@@ -51,8 +51,10 @@ Operation* BitDialect::materializeConstant(
             value.cast<IntegerAttr>());
 
     // Materialize bit sequences using our constant op.
-    if (const auto impl = value.dyn_cast<BitSequenceLikeAttr>()) {
+    if (auto impl = value.dyn_cast<BitSequenceLikeAttr>()) {
         if (type != impl.getType()) return nullptr;
+        // Canonicalize the attribute for good measure.
+        impl = BitSequenceLikeAttr::get(impl);
         return builder.create<ConstantOp>(location, impl);
     }
 
