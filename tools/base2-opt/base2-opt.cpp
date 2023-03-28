@@ -11,6 +11,7 @@
 #include "mlir/InitAllDialects.h"
 #include "mlir/InitAllPasses.h"
 #include "mlir/Tools/mlir-opt/MlirOptMain.h"
+#include "ub-mlir/Dialect/UB/IR/UB.h"
 
 using namespace mlir;
 
@@ -21,6 +22,7 @@ int main(int argc, char* argv[])
 
     registry.insert<base2::Base2Dialect>();
     registry.insert<bit::BitDialect>();
+    registry.insert<ub::UBDialect>();
 
     registerAllPasses();
     bit::registerBitPasses();

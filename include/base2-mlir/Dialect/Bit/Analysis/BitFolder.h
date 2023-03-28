@@ -43,8 +43,8 @@ public:
     /// @pre    `in && resultTy`
     /// @pre    bit widths of @p in and @p resultTy match
     /// @pre    shapes of @p in and @p resultTy match
-    [[nodiscard]] static ValueLikeAttr
-    bitCast(ValueLikeAttr in, BitSequenceLikeType resultTy);
+    [[nodiscard]] static ValueOrPoisonLikeAttr
+    bitCast(ValueOrPoisonLikeAttr in, BitSequenceLikeType resultTy);
 
     /// Folds a bitwise comparison.
     ///

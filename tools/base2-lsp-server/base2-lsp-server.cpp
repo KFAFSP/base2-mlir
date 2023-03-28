@@ -9,6 +9,7 @@
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/InitAllDialects.h"
 #include "mlir/Tools/mlir-lsp-server/MlirLspServerMain.h"
+#include "ub-mlir/Dialect/UB/IR/UB.h"
 
 using namespace mlir;
 
@@ -24,6 +25,7 @@ int main(int argc, char* argv[])
 
     registry.insert<base2::Base2Dialect>();
     registry.insert<bit::BitDialect>();
+    registry.insert<ub::UBDialect>();
 
     return asMainReturnCode(MlirLspServerMain(argc, argv, registry));
 }

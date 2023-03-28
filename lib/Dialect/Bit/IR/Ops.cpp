@@ -94,7 +94,8 @@ OpFoldResult CastOp::fold(CastOp::FoldAdaptor adaptor)
     if (getType() == getIn().getType()) return getIn();
 
     // Fold constant bit casts.
-    if (const auto attr = adaptor.getIn().dyn_cast_or_null<ValueLikeAttr>())
+    if (const auto attr =
+            adaptor.getIn().dyn_cast_or_null<ValueOrPoisonLikeAttr>())
         return BitFolder::bitCast(attr, getType());
 
     // Otherwise folding is not performed.

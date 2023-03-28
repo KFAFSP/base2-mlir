@@ -11,15 +11,21 @@
 using namespace mlir;
 using namespace mlir::bit;
 
-ValueLikeAttr BitFolder::bitCast(ValueLikeAttr in, BitSequenceLikeType resultTy)
+ValueOrPoisonLikeAttr
+BitFolder::bitCast(ValueOrPoisonLikeAttr in, BitSequenceLikeType resultTy)
 {
     assert(in && resultTy);
     assert(
-        in.getElementType().getBitWidth()
+        in.getType().getElementType().getBitWidth()
         == resultTy.getElementType().getBitWidth());
     assert(succeeded(verifyCompatibleShape(in.getType(), resultTy)));
 
-    return in.bitCastElements(resultTy.getElementType());
+    // NOTE: Instead of bitCastElements, we must now use map so that poison is
+    //       handled correctly.
+    return map(
+        [](const auto &el) { return el; },
+        in,
+        resultTy.getElementType());
 }
 
 ValueLikeAttr BitFolder::bitCmp(
