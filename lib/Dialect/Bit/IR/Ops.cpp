@@ -142,31 +142,10 @@ void CastOp::getCanonicalizationPatterns(
 
 OpFoldResult CmpOp::fold(CmpOp::FoldAdaptor adaptor)
 {
-    const auto makeSplat = [&](bool value) -> Attribute {
-        if (const auto shaped = getType().dyn_cast<ShapedType>())
-            return DenseBitSequencesAttr::get(shaped, value);
-
-        return ValueAttr::get(getType(), value);
-    };
-
-    // Fold trivial predicate.
-    switch (getPredicate()) {
-    case EqualityPredicate::Verum: return makeSplat(true);
-    case EqualityPredicate::Falsum: return makeSplat(false);
-    default: break;
-    }
-
-    // Fold trivial equality.
-    if (getLhs() == getRhs()) return makeSplat(matches(true, getPredicate()));
-
-    // Fold constant operands.
-    const auto lhsAttr = adaptor.getLhs().dyn_cast_or_null<ValueLikeAttr>();
-    const auto rhsAttr = adaptor.getRhs().dyn_cast_or_null<ValueLikeAttr>();
-    if (lhsAttr && rhsAttr)
-        return BitFolder::bitCmp(getPredicate(), lhsAttr, rhsAttr);
-
-    // Otherwise folding is not performed.
-    return OpFoldResult{};
+    return BitFolder::bitCmp(
+        getPredicate(),
+        combine(adaptor.getLhs(), getLhs()),
+        combine(adaptor.getRhs(), getRhs()));
 }
 
 namespace {

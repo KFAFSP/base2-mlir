@@ -65,6 +65,36 @@ func.func @cmp_container() -> (tensor<3xi1>, tensor<3xi1>, tensor<3xi1>, tensor<
     return %0, %1, %2, %3 : tensor<3xi1>, tensor<3xi1>, tensor<3xi1>, tensor<3xi1>
 }
 
+// CHECK-LABEL: func.func @cmp_poison(
+func.func @cmp_poison(%arg0: i64) -> (i1, i1, i1, i1) {
+    // CHECK-DAG: %[[TRUE:.+]] = bit.constant true
+    // CHECK-DAG: %[[FALSE:.+]] = bit.constant false
+    // CHECK-DAG: %[[POISON:.+]] = ub.poison : i1
+    %poison = ub.poison : i64
+    %0 = bit.cmp true %arg0, %poison : i64
+    %1 = bit.cmp eq %arg0, %poison : i64
+    %2 = bit.cmp ne %poison, %arg0 : i64
+    %3 = bit.cmp false %poison, %arg0 : i64
+    // CHECK: return %[[TRUE]], %[[POISON]], %[[POISON]], %[[FALSE]]
+    return %0, %1, %2, %3 : i1, i1, i1, i1
+}
+
+// CHECK-LABEL: func.func @cmp_poison_container(
+func.func @cmp_poison_container()
+        -> (tensor<3xi1>, tensor<3xi1>, tensor<3xi1>, tensor<3xi1>) {
+    // CHECK-DAG: %[[TRUE:.+]] = bit.constant dense<true> : tensor<3xi1>
+    // CHECK-DAG: %[[FALSE:.+]] = bit.constant dense<false> : tensor<3xi1>
+    // CHECK-DAG: %[[POISON:.+]] = ub.poison #ub.poison<"0000000000000005", bit(dense<[false, true, false]>)> : tensor<3xi1>
+    %lhs = ub.poison #ub.poison<"04", bit(dense<[0,1,2]>)> : tensor<3xi64>
+    %rhs = ub.poison #ub.poison<"01", bit(dense<[0,1,2]>)> : tensor<3xi64>
+    %0 = bit.cmp true %lhs, %rhs : tensor<3xi64>
+    %1 = bit.cmp eq %lhs, %rhs : tensor<3xi64>
+    %2 = bit.cmp eq %rhs, %lhs : tensor<3xi64>
+    %3 = bit.cmp false %rhs, %lhs : tensor<3xi64>
+    // CHECK: return %[[TRUE]], %[[POISON]], %[[POISON]], %[[FALSE]]
+    return %0, %1, %2, %3 : tensor<3xi1>, tensor<3xi1>, tensor<3xi1>, tensor<3xi1>
+}
+
 //===----------------------------------------------------------------------===//
 // select
 //===----------------------------------------------------------------------===//

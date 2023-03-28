@@ -11,6 +11,28 @@
 using namespace mlir;
 using namespace mlir::bit;
 
+/// Gets the MLIRContext of @p value .
+///
+/// @pre    `value`
+[[nodiscard]] static MLIRContext* getContext(OpFoldResult value)
+{
+    if (const auto attr = value.dyn_cast<Attribute>()) return attr.getContext();
+    return value.dyn_cast<Value>().getContext();
+}
+/// Gets the type of @p value .
+///
+/// @pre    `value`
+[[nodiscard]] static Type getType(OpFoldResult value)
+{
+    if (const auto attr = value.dyn_cast<Attribute>())
+        return attr.cast<TypedAttr>().getType();
+    return value.dyn_cast<Value>().getType();
+}
+
+//===----------------------------------------------------------------------===//
+// BitFolder
+//===----------------------------------------------------------------------===//
+
 ValueOrPoisonLikeAttr
 BitFolder::bitCast(ValueOrPoisonLikeAttr in, BitSequenceLikeType resultTy)
 {
@@ -28,32 +50,76 @@ BitFolder::bitCast(ValueOrPoisonLikeAttr in, BitSequenceLikeType resultTy)
         resultTy.getElementType());
 }
 
-ValueLikeAttr BitFolder::bitCmp(
+ValueOrPoisonLikeAttr BitFolder::bitCmp(
     EqualityPredicate predicate,
-    ValueLikeAttr lhs,
-    ValueLikeAttr rhs)
+    ValueOrPoisonLikeAttr lhs,
+    ValueOrPoisonLikeAttr rhs)
 {
     assert(lhs && rhs);
     assert(
-        lhs.getElementType().getBitWidth()
-        == rhs.getElementType().getBitWidth());
+        lhs.getType().getElementType().getBitWidth()
+        == rhs.getType().getElementType().getBitWidth());
     assert(succeeded(verifyCompatibleShape(lhs.getType(), rhs.getType())));
 
     // Quick exit for verum and falsum.
     const auto i1Ty = IntegerType::get(lhs.getContext(), 1);
+    const auto resultTy = lhs.getType().getSameShape(i1Ty);
     switch (predicate) {
-    case EqualityPredicate::Verum: return ValueAttr::get(i1Ty, true);
-    case EqualityPredicate::Falsum: return ValueAttr::get(i1Ty, false);
+    case EqualityPredicate::Verum:
+        return BitSequenceLikeAttr::get(resultTy, true);
+    case EqualityPredicate::Falsum:
+        return BitSequenceLikeAttr::get(resultTy, false);
     default: break;
     }
 
     // Zip the operands together.
-    return lhs.zip(
-        [=](const auto &lhs, const auto &rhs) {
-            return matches(lhs == rhs, predicate);
+    return zip(
+        [=](const auto &lhs, const auto &rhs) -> ConstOrPoison {
+            if (!lhs || !rhs) return poison;
+            return matches(*lhs == *rhs, predicate);
         },
+        lhs,
         rhs,
         i1Ty);
+}
+
+OpFoldResult BitFolder::bitCmp(
+    EqualityPredicate predicate,
+    OpFoldResult lhs,
+    OpFoldResult rhs)
+{
+    assert(lhs && rhs);
+
+    // Infer the result type.
+    const auto inTy = getType(lhs).cast<BitSequenceLikeType>();
+    const auto i1Ty = IntegerType::get(getContext(lhs), 1);
+    const auto outTy = inTy.getSameShape(i1Ty);
+
+    // Handle trivial predicate.
+    switch (predicate) {
+    case EqualityPredicate::Verum:
+        return BitSequenceLikeAttr::getSplat(outTy, true);
+    case EqualityPredicate::Falsum:
+        return BitSequenceLikeAttr::getSplat(outTy, false);
+    default: break;
+    }
+
+    // Handle poisoned case.
+    if (ub::isPoison(lhs) || ub::isPoison(rhs))
+        return ValueOrPoisonLikeAttr::get(outTy);
+
+    // Handle trivial case.
+    if (lhs == rhs)
+        return BitSequenceLikeAttr::getSplat(outTy, matches(true, predicate));
+
+    // Handle constant case.
+    const auto lhsAttr =
+        lhs.dyn_cast<Attribute>().dyn_cast_or_null<ValueOrPoisonLikeAttr>();
+    const auto rhsAttr =
+        rhs.dyn_cast<Attribute>().dyn_cast_or_null<ValueOrPoisonLikeAttr>();
+    if (lhsAttr && rhsAttr) return bitCmp(predicate, lhsAttr, rhsAttr);
+
+    return {};
 }
 
 ValueLikeAttr BitFolder::bitSelect(

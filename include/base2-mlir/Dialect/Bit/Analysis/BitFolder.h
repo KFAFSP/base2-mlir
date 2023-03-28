@@ -51,8 +51,17 @@ public:
     /// @pre    `lhs && rhs`
     /// @pre    bit widths of @p lhs and @p rhs match
     /// @pre    shapes of @p lhs and @p rhs match
-    [[nodiscard]] static ValueLikeAttr
-    bitCmp(EqualityPredicate predicate, ValueLikeAttr lhs, ValueLikeAttr rhs);
+    [[nodiscard]] static ValueOrPoisonLikeAttr bitCmp(
+        EqualityPredicate predicate,
+        ValueOrPoisonLikeAttr lhs,
+        ValueOrPoisonLikeAttr rhs);
+    /// Folds a bitwise comparison.
+    ///
+    /// @pre    `lhs && rhs`
+    /// @pre    bit widths of @p lhs and @p rhs match
+    /// @pre    shapes of @p lhs and @p rhs match
+    [[nodiscard]] static OpFoldResult
+    bitCmp(EqualityPredicate predicate, OpFoldResult lhs, OpFoldResult rhs);
 
     /// Folds a bit sequence ternary operator.
     ///
