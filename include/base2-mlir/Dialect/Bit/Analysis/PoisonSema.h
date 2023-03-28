@@ -21,6 +21,9 @@ using Const = BitSequence;
 /// Type that stores poison or a Value.
 using ConstOrPoison = std::optional<Const>;
 
+/// ConstOrPoison value that indicate poison.
+static constexpr auto poison = std::nullopt;
+
 /// Attribute that stores a compile-time constant bit sequence.
 using ValueAttr = BitSequenceAttr;
 /// Attribute that stores a single or container of ValueAttr.
@@ -34,22 +37,22 @@ using ValueOrPoisonLikeAttr = ub::ValueOrPoisonAttr<ValueLikeAttr>;
 // Constant folding
 //===----------------------------------------------------------------------===//
 
-/// Unary ConstOrPoison functor.
+/// Reference to a unary ConstOrPoison functor.
 using UnaryFn = function_ref<ConstOrPoison(ConstOrPoison)>;
 
 ValueOrPoisonLikeAttr
 map(UnaryFn fn, ValueOrPoisonLikeAttr attr, BitSequenceType elementTy = {});
 
-/// Binary ConstOrPoison functor.
+/// Reference to a binary ConstOrPoison functor.
 using BinaryFn = function_ref<ConstOrPoison(ConstOrPoison, ConstOrPoison)>;
 
 ValueOrPoisonLikeAttr
 zip(BinaryFn fn,
     ValueOrPoisonLikeAttr lhs,
-    ValueOrPoisonAttr rhs,
+    ValueOrPoisonLikeAttr rhs,
     BitSequenceType elementTy = {});
 
-/// Ternary ConstOrPoison functor.
+/// Reference to a ternary ConstOrPoison functor.
 using TernaryFn =
     function_ref<ConstOrPoison(ConstOrPoison, ConstOrPoison, ConstOrPoison)>;
 

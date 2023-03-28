@@ -78,7 +78,6 @@ def Bit_BitSequenceAttr : AttrInterface<"BitSequenceAttr"> {
         /// Applies @p fn to the contained value.
         ///
         /// If @p elementTy is nullptr, getType() is used.
-        /// If @p fn returns std::nullopt, the result will be nullptr.
         ///
         /// @pre    bit width of @p elementTy and @p fn result matches
         [[nodiscard]] BitSequenceAttr map(
@@ -87,15 +86,11 @@ def Bit_BitSequenceAttr : AttrInterface<"BitSequenceAttr"> {
         {
             if (!elementTy) elementTy = getType();
 
-            if (const auto mapped = fn(getValue()))
-                return BitSequenceAttr::get(elementTy, *mapped);
-
-            return BitSequenceAttr{};
+            return BitSequenceAttr::get(elementTy, fn(getValue()));
         }
         /// Combines the values contained in this and @p rhs using @p fn .
         ///
         /// If @p elementTy is nullptr, getType() is used.
-        /// If @p fn returns std::nullopt, the result will be nullptr.
         ///
         /// @pre    `rhs`
         /// @pre    bit width of @p elementTy and @p fn result matches
@@ -108,10 +103,29 @@ def Bit_BitSequenceAttr : AttrInterface<"BitSequenceAttr"> {
 
             if (!elementTy) elementTy = getType();
 
-            if (const auto zipped = fn(getValue(), rhs.getValue()))
-                return BitSequenceAttr::get(elementTy, *zipped);
+            return BitSequenceAttr::get(
+                elementTy,
+                fn(getValue(), rhs.getValue()));
+        }
+        /// Combines the values of this, @p arg1 and @p arg2 using @p fn .
+        ///
+        /// If @p elementTy is nullptr, getType() is used.
+        ///
+        /// @pre    `arg1 && arg2`
+        /// @pre    bit width of @p elementTy and @p fn result matches
+        [[nodiscard]] BitSequenceAttr zip(
+            TernaryBitSequenceFn fn,
+            BitSequenceAttr arg1,
+            BitSequenceAttr arg2,
+            BitSequenceType elementTy = {}) const
+        {
+            assert(arg1 && arg2);
 
-            return BitSequenceAttr{};
+            if (!elementTy) elementTy = getType();
+
+            return BitSequenceAttr::get(
+                elementTy,
+                fn(getValue(), arg1.getValue(), arg2.getValue()));
         }
     }];
 }

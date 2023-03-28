@@ -168,12 +168,8 @@ DenseBitSequencesAttr DenseBitSequencesAttr::map(
     const auto outTy = getType().cloneWith(std::nullopt, elementTy);
 
     // If this is a splat value, we can produce a new splat.
-    if (isSplat()) {
-        if (const auto result = fn(getSplatValue()))
-            return DenseBitSequencesAttr::get(outTy, *result);
-
-        return DenseBitSequencesAttr{};
-    }
+    if (isSplat())
+        return DenseBitSequencesAttr::get(outTy, fn(getSplatValue()));
 
     // Allocate storage for the result elements.
     SmallVector<BitSequence> result;
@@ -181,12 +177,7 @@ DenseBitSequencesAttr DenseBitSequencesAttr::map(
 
     // Map all the elements.
     const auto end = value_end();
-    for (auto it = value_begin(); it != end; ++it) {
-        const auto mapped = fn(*it);
-        if (!mapped) return DenseBitsAttr{};
-
-        result.push_back(*mapped);
-    }
+    for (auto it = value_begin(); it != end; ++it) result.push_back(fn(*it));
 
     // Construct the canonical attribute.
     return DenseBitSequencesAttr::get(outTy, result);
@@ -206,10 +197,9 @@ DenseBitSequencesAttr DenseBitSequencesAttr::zip(
 
     // If both are splats, we can create a new splat.
     if (isSplat() && rhs.isSplat()) {
-        if (const auto zipped = fn(getSplatValue(), rhs.getSplatValue()))
-            return DenseBitSequencesAttr::get(outTy, *zipped);
-
-        return DenseBitSequencesAttr{};
+        return DenseBitSequencesAttr::get(
+            outTy,
+            fn(getSplatValue(), rhs.getSplatValue()));
     }
 
     // Allocate storage for the result elements.
@@ -220,12 +210,45 @@ DenseBitSequencesAttr DenseBitSequencesAttr::zip(
     const auto lhsEnd = value_end();
     for (auto [lhsIt, rhsIt] = std::make_pair(value_begin(), rhs.value_begin());
          lhsIt != lhsEnd;
-         ++lhsIt, ++rhsIt) {
-        const auto zipped = fn(*lhsIt, *rhsIt);
-        if (!zipped) return DenseBitSequencesAttr{};
+         ++lhsIt, ++rhsIt)
+        result.push_back(fn(*lhsIt, *rhsIt));
 
-        result.push_back(*zipped);
+    // Construct the canonical attribute.
+    return DenseBitSequencesAttr::get(outTy, result);
+}
+
+DenseBitSequencesAttr DenseBitSequencesAttr::zip(
+    TernaryBitSequenceFn fn,
+    DenseBitSequencesAttr arg1,
+    DenseBitSequencesAttr arg2,
+    BitSequenceType elementTy) const
+{
+    assert(arg1 && arg2);
+    assert(getType().getShape().equals(arg1.getType().getShape()));
+    assert(getType().getShape().equals(arg2.getType().getShape()));
+
+    // Infer the type of the result.
+    if (!elementTy) elementTy = getElementType();
+    const auto outTy = getType().cloneWith(std::nullopt, elementTy);
+
+    // If all are splats, we can create a new splat.
+    if (isSplat() && arg1.isSplat() && arg2.isSplat()) {
+        return DenseBitSequencesAttr::get(
+            outTy,
+            fn(getSplatValue(), arg1.getSplatValue(), arg2.getSplatValue()));
     }
+
+    // Allocate storage for the result elements.
+    SmallVector<BitSequence> result;
+    result.reserve(size());
+
+    // Zip together the elements.
+    const auto end0 = value_end();
+    for (auto [it0, it1, it2] =
+             std::tuple(value_begin(), arg1.value_begin(), arg2.value_begin());
+         it0 != end0;
+         ++it0, ++it1, ++it2)
+        result.push_back(fn(*it0, *it1, *it2));
 
     // Construct the canonical attribute.
     return DenseBitSequencesAttr::get(outTy, result);

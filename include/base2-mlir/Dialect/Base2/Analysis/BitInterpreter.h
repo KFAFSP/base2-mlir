@@ -58,8 +58,12 @@ class BitInterpreter {
         if (rhs.getElementType() != impl) return bit::BitSequenceLikeAttr{};
 
         return lhs.zip(
-            [&](const auto &l, const auto &r) {
-                return fn(impl, l, r, args...);
+            [&](const auto &l, const auto &r) -> bit::BitSequence {
+                if (const auto result = fn(impl, l, r, args...)) return *result;
+
+                // TODO: Migrate to poison.
+                assert(false && "not implemented yet");
+                return {};
             },
             rhs);
     }
@@ -121,7 +125,14 @@ public:
         if (!impl) return bit::BitSequenceLikeAttr{};
 
         return from.map(
-            [&](const auto &l) { return valueCast(impl, l, to, roundingMode); },
+            [&](const auto &l) -> bit::BitSequence {
+                if (const auto result = valueCast(impl, l, to, roundingMode))
+                    return *result;
+
+                // TODO: Migrate to poison.
+                assert(false && "not implemented yet");
+                return {};
+            },
             to.cast<bit::BitSequenceType>());
     }
     [[nodiscard]] static bit::BitSequenceLikeAttr valueCast(
@@ -167,11 +178,13 @@ public:
 
         const auto i1Ty = IntegerType::get(lhs.getContext(), 1);
         return lhs.zip(
-            [pred, impl](const auto &lhs, const auto &rhs) -> bit_result {
+            [pred, impl](const auto &lhs, const auto &rhs) -> bit::BitSequence {
                 if (const auto ordering = cmp(impl, lhs, rhs))
                     return bit::BitSequence(matches(*ordering, pred));
 
-                return std::nullopt;
+                // TODO: Migrate to poison.
+                assert(false && "not implemented yet");
+                return {};
             },
             rhs,
             i1Ty);

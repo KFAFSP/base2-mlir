@@ -13,12 +13,15 @@
 namespace mlir::bit {
 
 /// Reference to an unary BitSequence operation.
-using UnaryBitSequenceFn =
-    function_ref<std::optional<BitSequence>(const BitSequence &)>;
+using UnaryBitSequenceFn = function_ref<BitSequence(const BitSequence &)>;
 
 /// Reference to a binary BitSequence operation.
-using BinaryBitSequenceFn = function_ref<
-    std::optional<BitSequence>(const BitSequence &, const BitSequence &)>;
+using BinaryBitSequenceFn =
+    function_ref<BitSequence(const BitSequence &, const BitSequence &)>;
+
+/// Reference to a ternary BitSequence operation.
+using TernaryBitSequenceFn = function_ref<
+    BitSequence(const BitSequence &, const BitSequence &, const BitSequence &)>;
 
 } // namespace mlir::bit
 
@@ -134,7 +137,6 @@ public:
     /// Applies @p fn to the contained values.
     ///
     /// If @p elementTy is nullptr, getType() is used.
-    /// If @p fn returns std::nullopt, the result will be nullptr.
     ///
     /// @pre    bit width of @p elementTy and @p fn result matches
     [[nodiscard]] DenseBitSequencesAttr
@@ -142,7 +144,6 @@ public:
     /// Combines the values contained in this and @p rhs using @p fn .
     ///
     /// If @p elementTy is nullptr, getType() is used.
-    /// If @p fn returns std::nullopt, the result will be nullptr.
     ///
     /// @pre    `rhs`
     /// @pre    `rhs.getType().getShape().equals(getType().getShape())`
@@ -150,6 +151,19 @@ public:
     [[nodiscard]] DenseBitSequencesAttr
     zip(BinaryBitSequenceFn fn,
         DenseBitSequencesAttr rhs,
+        BitSequenceType elementTy = {}) const;
+    /// Combines the values contained in this, @p arg1 and @p arg2 using @p fn .
+    ///
+    /// If @p elementTy is nullptr, getType() is used.
+    ///
+    /// @pre    `arg1 && arg2`
+    /// @pre    `arg1.getType().getShape().equals(getType().getShape())`
+    /// @pre    `arg2.getType().getShape().equals(getType().getShape())`
+    /// @pre    bit width of @p elementTy and @p fn result matches
+    [[nodiscard]] DenseBitSequencesAttr
+    zip(TernaryBitSequenceFn fn,
+        DenseBitSequencesAttr arg1,
+        DenseBitSequencesAttr arg2,
         BitSequenceType elementTy = {}) const;
 
     //===------------------------------------------------------------------===//
@@ -299,7 +313,6 @@ public:
     /// Applies @p fn to all values and returns the result.
     ///
     /// If @p elementTy is nullptr, getElementType() is used.
-    /// If @p fn returns std::nullopt, the result will be nullptr.
     ///
     /// @pre    bit width of @p elementTy and @p fn result matches
     [[nodiscard]] BitSequenceLikeAttr
@@ -315,7 +328,6 @@ public:
     /// Combines the values with @p rhs using @p fn and return the result.
     ///
     /// If @p elementTy is nullptr, getElementType() is used.
-    /// If @p fn returns std::nullopt, the result will be nullptr.
     ///
     /// @pre    `rhs`
     /// @pre    shapes are compatible
@@ -337,6 +349,36 @@ public:
         const auto denseLhs = cast<DenseBitSequencesAttr>();
         const auto denseRhs = rhs.cast<DenseBitSequencesAttr>();
         return denseLhs.zip(fn, denseRhs, elementTy);
+    }
+    /// Combines the values contained in this, @p arg1 and @p arg2 using @p fn .
+    ///
+    /// If @p elementTy is nullptr, getType() is used.
+    ///
+    /// @pre    `arg1 && arg2`
+    /// @pre    `arg1.getType().getShape().equals(getType().getShape())`
+    /// @pre    `arg2.getType().getShape().equals(getType().getShape())`
+    /// @pre    bit width of @p elementTy and @p fn result matches
+    [[nodiscard]] BitSequenceLikeAttr
+    zip(TernaryBitSequenceFn fn,
+        BitSequenceLikeAttr arg1,
+        BitSequenceLikeAttr arg2,
+        BitSequenceType elementTy = {}) const
+    {
+        assert(arg1 && arg2);
+
+        // Handle single element case.
+        const auto single0 = dyn_cast<BitSequenceAttr>();
+        const auto single1 = arg1.dyn_cast<BitSequenceAttr>();
+        const auto single2 = arg2.dyn_cast<BitSequenceAttr>();
+        assert(static_cast<bool>(single0) == static_cast<bool>(single1));
+        assert(static_cast<bool>(single0) == static_cast<bool>(single2));
+        if (single0) return single0.zip(fn, single1, single2, elementTy);
+
+        // Handle dense case.
+        const auto dense0 = cast<DenseBitSequencesAttr>();
+        const auto dense1 = arg1.cast<DenseBitSequencesAttr>();
+        const auto dense2 = arg2.cast<DenseBitSequencesAttr>();
+        return dense0.zip(fn, dense1, dense2, elementTy);
     }
 };
 
