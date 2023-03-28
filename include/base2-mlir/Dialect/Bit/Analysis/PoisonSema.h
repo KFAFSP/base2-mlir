@@ -40,13 +40,26 @@ using ValueOrPoisonLikeAttr = ub::ValueOrPoisonAttr<ValueLikeAttr>;
 /// Reference to a unary ConstOrPoison functor.
 using UnaryFn = function_ref<ConstOrPoison(ConstOrPoison)>;
 
-ValueOrPoisonLikeAttr
+/// Applies @p fn to @p attr .
+///
+/// If @p elementTy is nullptr, `attr.getType().getElementType()` is used.
+///
+/// @pre    `attr`
+/// @pre    bit width of @p elementTy and @p fn result matches
+[[nodiscard]] ValueOrPoisonLikeAttr
 map(UnaryFn fn, ValueOrPoisonLikeAttr attr, BitSequenceType elementTy = {});
 
 /// Reference to a binary ConstOrPoison functor.
 using BinaryFn = function_ref<ConstOrPoison(ConstOrPoison, ConstOrPoison)>;
 
-ValueOrPoisonLikeAttr
+/// Combines the values contained in @p lhs and @p rhs using @p fn .
+///
+/// If @p elementTy is nullptr, `lhs.getType().getElementType()` is used.
+///
+/// @pre    `lhs && rhs`
+/// @pre    shapes of @p lhs and @p rhs match
+/// @pre    bit width of @p elementTy and @p fn result matches
+[[nodiscard]] ValueOrPoisonLikeAttr
 zip(BinaryFn fn,
     ValueOrPoisonLikeAttr lhs,
     ValueOrPoisonLikeAttr rhs,
@@ -56,7 +69,14 @@ zip(BinaryFn fn,
 using TernaryFn =
     function_ref<ConstOrPoison(ConstOrPoison, ConstOrPoison, ConstOrPoison)>;
 
-ValueOrPoisonLikeAttr
+/// Combines the values contained in @p arg0 , @p arg1 and @p arg2 using @p fn .
+///
+/// If @p elementTy is nullptr, `arg0.getType().getElementType()` is used.
+///
+/// @pre    `arg0 && arg1 && arg2`
+/// @pre    shapes of @p arg0 , @p arg1 and @p arg2 match
+/// @pre    bit width of @p elementTy and @p fn result matches
+[[nodiscard]] ValueOrPoisonLikeAttr
 zip(TernaryFn fn,
     ValueOrPoisonLikeAttr arg0,
     ValueOrPoisonLikeAttr arg1,

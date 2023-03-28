@@ -14,7 +14,7 @@ using namespace mlir::bit;
 ///
 /// For a scalar type, this is 1. For a container type, this is the product of
 /// its dimensions. For dynamic shapes, this is ShapedType::kDynamic;
-static std::int64_t getNumElements(Type type)
+[[nodiscard]] static std::int64_t getNumElements(Type type)
 {
     if (const auto shapedTy = type.dyn_cast<ShapedType>()) {
         if (!shapedTy.hasStaticShape()) return ShapedType::kDynamic;
@@ -32,7 +32,7 @@ static std::int64_t getNumElements(Type type)
 /// Make a valid default value for @p elementTy .
 ///
 /// @pre    `elementTy`
-static Const makeDefault(BitSequenceType elementTy)
+[[nodiscard]] static Const makeDefault(BitSequenceType elementTy)
 {
     return BitSequence::zeros(elementTy.getBitWidth());
 }
@@ -40,7 +40,7 @@ static Const makeDefault(BitSequenceType elementTy)
 /// Make a result attribute for @p splatValue and @p resultTy .
 ///
 /// @pre    `resultTy`
-static ValueOrPoisonLikeAttr
+[[nodiscard]] static ValueOrPoisonLikeAttr
 makeResult(ConstOrPoison splatValue, BitSequenceLikeType resultTy)
 {
     assert(resultTy);
@@ -55,7 +55,7 @@ makeResult(ConstOrPoison splatValue, BitSequenceLikeType resultTy)
 /// Make a result attribute for @p value and @p poisonMask .
 ///
 /// @pre    `value`
-static ValueOrPoisonLikeAttr
+[[nodiscard]] static ValueOrPoisonLikeAttr
 makeResult(ValueLikeAttr value, const llvm::APInt &poisonMask)
 {
     assert(value);
@@ -70,7 +70,7 @@ makeResult(ValueLikeAttr value, const llvm::APInt &poisonMask)
 }
 
 /// Make a ConstOrPoison value from @p isPoison and @p value .
-static ConstOrPoison select(bool isPoison, const Const &value)
+[[nodiscard]] static ConstOrPoison select(bool isPoison, const Const &value)
 {
     if (isPoison) return poison;
     return value;

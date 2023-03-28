@@ -355,8 +355,7 @@ public:
     /// If @p elementTy is nullptr, getType() is used.
     ///
     /// @pre    `arg1 && arg2`
-    /// @pre    `arg1.getType().getShape().equals(getType().getShape())`
-    /// @pre    `arg2.getType().getShape().equals(getType().getShape())`
+    /// @pre    shapes are compatible
     /// @pre    bit width of @p elementTy and @p fn result matches
     [[nodiscard]] BitSequenceLikeAttr
     zip(TernaryBitSequenceFn fn,
