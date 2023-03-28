@@ -22,6 +22,16 @@ func.func @cast_poison() -> i32 {
     return %1 : i32
 }
 
+// CHECK-LABEL: func.func @cast_poison_partial(
+func.func @cast_poison_partial() -> tensor<3xi32> {
+    // CHECK: %[[POISON:.+]] = ub.poison #ub.poison<"0000000000000005", bit(dense<[0, 1, 0]>)> : tensor<3xi32>
+    %0 = ub.poison #ub.poison<"05", bit(dense<[0,1,2]>)> : tensor<3xsi32>
+    %1 = bit.cast %0 : tensor<3xsi32> to tensor<3xi32>
+    // CHECK: return %[[POISON]]
+    return %1 : tensor<3xi32>
+}
+
+
 //===----------------------------------------------------------------------===//
 // cmp
 //===----------------------------------------------------------------------===//
