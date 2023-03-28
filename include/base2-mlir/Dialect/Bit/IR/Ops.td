@@ -56,6 +56,7 @@ def Bit_ConstantOp : Bit_Op<
     let assemblyFormat = "attr-dict $value";
 
     let hasFolder = 1;
+    let hasCanonicalizer = 1;
 
     code extraClassDeclaration = [{
     public:

@@ -42,9 +42,33 @@ LogicalResult ConstantOp::inferReturnTypes(
     return success();
 }
 
-OpFoldResult ConstantOp::fold(ConstantOp::FoldAdaptor adaptor)
+OpFoldResult ConstantOp::fold(ConstantOp::FoldAdaptor) { return getValue(); }
+
+namespace {
+
+struct BuiltinConstant : OpRewritePattern<ConstantOp> {
+    using OpRewritePattern::OpRewritePattern;
+
+    LogicalResult
+    matchAndRewrite(ConstantOp op, PatternRewriter &rewriter) const override
+    {
+        // Construct the canonical attribute.
+        const auto canonical = BitSequenceLikeAttr::get(op.getValue());
+
+        // Attempt to update the value.
+        if (op.getValue() == canonical) return failure();
+        rewriter.updateRootInPlace(op, [&]() { op.setValueAttr(canonical); });
+        return success();
+    }
+};
+
+} // namespace
+
+void ConstantOp::getCanonicalizationPatterns(
+    RewritePatternSet &patterns,
+    MLIRContext* context)
 {
-    return adaptor.getValue();
+    patterns.add<BuiltinConstant>(context);
 }
 
 //===----------------------------------------------------------------------===//
