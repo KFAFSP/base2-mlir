@@ -12,6 +12,7 @@ add_mlir_dialect_library(BitDialect
         MLIRParser
         MLIRSideEffectInterfaces
         MLIRIndexDialect
+        UBDialect
         BitAnalysis
         BitEnums
         BitInterfaces

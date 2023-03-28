@@ -69,6 +69,11 @@ add_compile_options(
     $<$<CXX_COMPILER_ID:Clang>:-fdebug-default-version=4>
 )
 
+# Add third-party and external projects.
+add_subdirectory(third-party)
+# NOTE: Abhorrent hack because LLVM/MLIR CMake is bad (interface targets plz)
+include_directories(SYSTEM ${THIRD_PARTY_INCLUDES})
+
 add_subdirectory(docs)
 add_subdirectory(include)
 add_subdirectory(lib)

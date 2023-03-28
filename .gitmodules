@@ -1,0 +1,3 @@
+[submodule "third-party/ub-mlir"]
+	path = third-party/ub-mlir
+	url = https://github.com/KFAFSP/ub-mlir.git

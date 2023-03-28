@@ -35,8 +35,7 @@ LogicalResult ConstantOp::inferReturnTypes(
     RegionRange,
     SmallVectorImpl<Type> &result)
 {
-    const auto value =
-        attributes.getAs<BitSequenceLikeAttr>(getAttributeNames()[0]);
+    const auto value = attributes.getAs<ValueLikeAttr>(getAttributeNames()[0]);
     if (!value) return failure();
 
     result.push_back(value.getType());
@@ -71,8 +70,7 @@ OpFoldResult CastOp::fold(CastOp::FoldAdaptor adaptor)
     if (getType() == getIn().getType()) return getIn();
 
     // Fold constant bit casts.
-    if (const auto attr =
-            adaptor.getIn().dyn_cast_or_null<BitSequenceLikeAttr>())
+    if (const auto attr = adaptor.getIn().dyn_cast_or_null<ValueLikeAttr>())
         return BitFolder::bitCast(attr, getType());
 
     // Otherwise folding is not performed.
@@ -123,7 +121,7 @@ OpFoldResult CmpOp::fold(CmpOp::FoldAdaptor adaptor)
         if (const auto shaped = getType().dyn_cast<ShapedType>())
             return DenseBitSequencesAttr::get(shaped, value);
 
-        return BitSequenceAttr::get(getType(), value);
+        return ValueAttr::get(getType(), value);
     };
 
     // Fold trivial predicate.
@@ -137,10 +135,8 @@ OpFoldResult CmpOp::fold(CmpOp::FoldAdaptor adaptor)
     if (getLhs() == getRhs()) return makeSplat(matches(true, getPredicate()));
 
     // Fold constant operands.
-    const auto lhsAttr =
-        adaptor.getLhs().dyn_cast_or_null<BitSequenceLikeAttr>();
-    const auto rhsAttr =
-        adaptor.getRhs().dyn_cast_or_null<BitSequenceLikeAttr>();
+    const auto lhsAttr = adaptor.getLhs().dyn_cast_or_null<ValueLikeAttr>();
+    const auto rhsAttr = adaptor.getRhs().dyn_cast_or_null<ValueLikeAttr>();
     if (lhsAttr && rhsAttr)
         return BitFolder::bitCmp(getPredicate(), lhsAttr, rhsAttr);
 
@@ -179,7 +175,7 @@ struct BooleanComparison : OpRewritePattern<CmpOp> {
             }
             rhsVal = rhsDense.getSplatValue().isOnes();
         } else {
-            rhsVal = rhsAttr.cast<BitSequenceAttr>().getValue().isOnes();
+            rhsVal = rhsAttr.cast<ValueAttr>().getValue().isOnes();
         }
 
         if ((op.getPredicate() == EqualityPredicate::Equal) == rhsVal) {
@@ -187,13 +183,12 @@ struct BooleanComparison : OpRewritePattern<CmpOp> {
             rewriter.replaceOp(op, op.getLhs());
         } else {
             // Operation is a bitwise complement.
-            const auto mask = rewriter
-                                  .create<ConstantOp>(
-                                      op.getLoc(),
-                                      BitSequenceLikeAttr::getSplat(
-                                          op.getRhs().getType(),
-                                          true))
-                                  .getResult();
+            const auto mask =
+                rewriter
+                    .create<ConstantOp>(
+                        op.getLoc(),
+                        ValueLikeAttr::getSplat(op.getRhs().getType(), true))
+                    .getResult();
             rewriter.replaceOpWithNewOp<XorOp>(op, op.getLhs(), mask);
         }
 
@@ -281,7 +276,7 @@ OpFoldResult SelectOp::fold(SelectOp::FoldAdaptor adaptor)
 
     // Fold constant conditionals.
     if (const auto cond =
-            adaptor.getCondition().dyn_cast_or_null<BitSequenceLikeAttr>()) {
+            adaptor.getCondition().dyn_cast_or_null<ValueLikeAttr>()) {
         return BitFolder::bitSelect(
             cond,
             combine(adaptor.getTrueValue(), getTrueValue()),
@@ -301,8 +296,7 @@ OpFoldResult AndOp::fold(AndOp::FoldAdaptor adaptor)
     // NOTE: Idempotency is folded by trait.
 
     // Fold if at least one operand is constant (commutative!).
-    if (const auto attr =
-            adaptor.getRhs().dyn_cast_or_null<BitSequenceLikeAttr>())
+    if (const auto attr = adaptor.getRhs().dyn_cast_or_null<ValueLikeAttr>())
         return BitFolder::bitAnd(combine(adaptor.getLhs(), getLhs()), attr);
 
     // Otherwise no folding is performed.
@@ -314,8 +308,7 @@ OpFoldResult OrOp::fold(OrOp::FoldAdaptor adaptor)
     // NOTE: Idempotency is folded by trait.
 
     // Fold if at least one operand is constant (commutative!).
-    if (const auto attr =
-            adaptor.getRhs().dyn_cast_or_null<BitSequenceLikeAttr>())
+    if (const auto attr = adaptor.getRhs().dyn_cast_or_null<ValueLikeAttr>())
         return BitFolder::bitOr(combine(adaptor.getLhs(), getLhs()), attr);
 
     // Otherwise no folding is performed.
@@ -326,14 +319,13 @@ OpFoldResult XorOp::fold(XorOp::FoldAdaptor adaptor)
 {
     // Fold trivial equality.
     if (getLhs() == getRhs()) {
-        return BitSequenceLikeAttr::getSplat(
+        return ValueLikeAttr::getSplat(
             getType(),
             BitSequence::zeros(getType().getElementType().getBitWidth()));
     }
 
     // Fold if at least one operand is constant (commutative!).
-    if (const auto attr =
-            adaptor.getRhs().dyn_cast_or_null<BitSequenceLikeAttr>())
+    if (const auto attr = adaptor.getRhs().dyn_cast_or_null<ValueLikeAttr>())
         return BitFolder::bitXor(combine(adaptor.getLhs(), getLhs()), attr);
 
     // Otherwise no folding is performed.
@@ -357,7 +349,7 @@ struct ZeroFunnel : OpRewritePattern<Op> {
         const auto funnel = op.getFunnel();
         if (!funnel) return failure();
         const auto funnelAttr =
-            cast_or_null<BitSequenceAttr>(getConstantValue(funnel));
+            cast_or_null<ValueAttr>(getConstantValue(funnel));
         if (!funnelAttr || !funnelAttr.getValue().isZeros()) return failure();
 
         // Remove the funnel operand.
@@ -639,8 +631,7 @@ void ShrOp::getCanonicalizationPatterns(
 OpFoldResult CountOp::fold(CountOp::FoldAdaptor adaptor)
 {
     // Fold if operand is constant.
-    if (const auto attr =
-            adaptor.getValue().dyn_cast_or_null<BitSequenceAttr>())
+    if (const auto attr = adaptor.getValue().dyn_cast_or_null<ValueAttr>())
         return BitFolder::bitCount(attr);
 
     return OpFoldResult{};
@@ -649,8 +640,7 @@ OpFoldResult CountOp::fold(CountOp::FoldAdaptor adaptor)
 OpFoldResult ClzOp::fold(ClzOp::FoldAdaptor adaptor)
 {
     // Fold if operand is constant.
-    if (const auto attr =
-            adaptor.getValue().dyn_cast_or_null<BitSequenceAttr>())
+    if (const auto attr = adaptor.getValue().dyn_cast_or_null<ValueAttr>())
         return BitFolder::bitClz(attr);
 
     return OpFoldResult{};
@@ -659,8 +649,7 @@ OpFoldResult ClzOp::fold(ClzOp::FoldAdaptor adaptor)
 OpFoldResult CtzOp::fold(CtzOp::FoldAdaptor adaptor)
 {
     // Fold if operand is constant.
-    if (const auto attr =
-            adaptor.getValue().dyn_cast_or_null<BitSequenceAttr>())
+    if (const auto attr = adaptor.getValue().dyn_cast_or_null<ValueAttr>())
         return BitFolder::bitCtz(attr);
 
     return OpFoldResult{};

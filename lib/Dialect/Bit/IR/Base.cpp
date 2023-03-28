@@ -42,6 +42,10 @@ Operation* BitDialect::materializeConstant(
     Type type,
     Location location)
 {
+    // Materialize poisoned constant values.
+    if (const auto poisonAttr = value.dyn_cast<ub::PoisonAttr>())
+        return builder.create<ub::PoisonOp>(location, poisonAttr);
+
     // Materialize constants of IndexType.
     // NOTE: This is one of the workarounds for IntegerAttr also encoding
     //       IndexType values while being a BitSequenceAttr.
