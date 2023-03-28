@@ -110,7 +110,8 @@ ValueOrPoisonLikeAttr mlir::bit::map(
             ++idx;
             return result.value_or(makeDefault(elementTy));
         },
-        elementTy);
+        elementTy,
+        false);
 
     return makeResult(valueAttr, outMask);
 }
@@ -154,7 +155,8 @@ ValueOrPoisonLikeAttr mlir::bit::zip(
                 ++idx;
                 return result.value_or(makeDefault(elementTy));
             },
-            elementTy);
+            elementTy,
+            false);
 
         return makeResult(valueAttr, outMask);
     }
@@ -170,7 +172,8 @@ ValueOrPoisonLikeAttr mlir::bit::zip(
             return result.value_or(makeDefault(elementTy));
         },
         rhs.getValueAttr(),
-        elementTy);
+        elementTy,
+        false);
 
     return makeResult(valueAttr, outMask);
 }
@@ -233,7 +236,8 @@ ValueOrPoisonLikeAttr mlir::bit::zip(
                 ++idx;
                 return result.value_or(makeDefault(elementTy));
             },
-            elementTy);
+            elementTy,
+            false);
 
         return makeResult(valueAttr, outMask);
     }
@@ -250,7 +254,8 @@ ValueOrPoisonLikeAttr mlir::bit::zip(
                 return result.value_or(makeDefault(elementTy));
             },
             arg1.getValueAttr(),
-            elementTy);
+            elementTy,
+            false);
 
         return makeResult(valueAttr, outMask);
     }
@@ -269,7 +274,8 @@ ValueOrPoisonLikeAttr mlir::bit::zip(
         },
         arg1.getValueAttr(),
         arg2.getValueAttr(),
-        elementTy);
+        elementTy,
+        false);
 
     return makeResult(valueAttr, outMask);
 }

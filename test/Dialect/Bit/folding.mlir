@@ -131,6 +131,17 @@ func.func @select_zip()
     return %0, %1, %2, %3 : tensor<4xi64>, tensor<4xi64>, tensor<4xi64>, tensor<4xi64>
 }
 
+// CHECK-LABEL: func.func @select_poison(
+func.func @select_poison() -> (tensor<3xi64>) {
+    // CHECK-DAG: %[[POISON:.+]] = ub.poison #ub.poison<"0000000000000005", bit(dense<[0, 1, 0]>)> : tensor<3xi64>
+    %cond = ub.poison #ub.poison<"05", bit(dense<[false, false, false]>)> : tensor<3xi1>
+    %false = bit.constant dense<[1, 1, 1]> : tensor<3xi64>
+    %true = bit.constant dense<[2, 2, 2]> : tensor<3xi64>
+    %0 = bit.select %cond, %true, %false : tensor<3xi1>, tensor<3xi64>
+    // CHECK: return %[[POISON]]
+    return %0 : tensor<3xi64>
+}
+
 //===----------------------------------------------------------------------===//
 // and
 //===----------------------------------------------------------------------===//

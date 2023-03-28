@@ -140,7 +140,9 @@ public:
     ///
     /// @pre    bit width of @p elementTy and @p fn result matches
     [[nodiscard]] DenseBitSequencesAttr
-    map(UnaryBitSequenceFn fn, BitSequenceType elementTy = {}) const;
+    map(UnaryBitSequenceFn fn,
+        BitSequenceType elementTy = {},
+        bool allowSplat = true) const;
     /// Combines the values contained in this and @p rhs using @p fn .
     ///
     /// If @p elementTy is nullptr, getType() is used.
@@ -151,7 +153,8 @@ public:
     [[nodiscard]] DenseBitSequencesAttr
     zip(BinaryBitSequenceFn fn,
         DenseBitSequencesAttr rhs,
-        BitSequenceType elementTy = {}) const;
+        BitSequenceType elementTy = {},
+        bool allowSplat = true) const;
     /// Combines the values contained in this, @p arg1 and @p arg2 using @p fn .
     ///
     /// If @p elementTy is nullptr, getType() is used.
@@ -164,7 +167,8 @@ public:
     zip(TernaryBitSequenceFn fn,
         DenseBitSequencesAttr arg1,
         DenseBitSequencesAttr arg2,
-        BitSequenceType elementTy = {}) const;
+        BitSequenceType elementTy = {},
+        bool allowSplat = true) const;
 
     //===------------------------------------------------------------------===//
     // ElementsAttr
@@ -316,14 +320,16 @@ public:
     ///
     /// @pre    bit width of @p elementTy and @p fn result matches
     [[nodiscard]] BitSequenceLikeAttr
-    map(UnaryBitSequenceFn fn, BitSequenceType elementTy = {}) const
+    map(UnaryBitSequenceFn fn,
+        BitSequenceType elementTy = {},
+        bool allowSplat = true) const
     {
         // Handle single element case.
         if (const auto single = dyn_cast<BitSequenceAttr>())
             return single.map(fn, elementTy);
 
         // Handle dense case.
-        return cast<DenseBitSequencesAttr>().map(fn, elementTy);
+        return cast<DenseBitSequencesAttr>().map(fn, elementTy, allowSplat);
     }
     /// Combines the values with @p rhs using @p fn and return the result.
     ///
@@ -335,7 +341,8 @@ public:
     [[nodiscard]] BitSequenceLikeAttr
     zip(BinaryBitSequenceFn fn,
         BitSequenceLikeAttr rhs,
-        BitSequenceType elementTy = {}) const
+        BitSequenceType elementTy = {},
+        bool allowSplat = true) const
     {
         assert(rhs);
 
@@ -348,7 +355,7 @@ public:
         // Handle dense case.
         const auto denseLhs = cast<DenseBitSequencesAttr>();
         const auto denseRhs = rhs.cast<DenseBitSequencesAttr>();
-        return denseLhs.zip(fn, denseRhs, elementTy);
+        return denseLhs.zip(fn, denseRhs, elementTy, allowSplat);
     }
     /// Combines the values contained in this, @p arg1 and @p arg2 using @p fn .
     ///
@@ -361,7 +368,8 @@ public:
     zip(TernaryBitSequenceFn fn,
         BitSequenceLikeAttr arg1,
         BitSequenceLikeAttr arg2,
-        BitSequenceType elementTy = {}) const
+        BitSequenceType elementTy = {},
+        bool allowSplat = true) const
     {
         assert(arg1 && arg2);
 
@@ -377,7 +385,7 @@ public:
         const auto dense0 = cast<DenseBitSequencesAttr>();
         const auto dense1 = arg1.cast<DenseBitSequencesAttr>();
         const auto dense2 = arg2.cast<DenseBitSequencesAttr>();
-        return dense0.zip(fn, dense1, dense2, elementTy);
+        return dense0.zip(fn, dense1, dense2, elementTy, allowSplat);
     }
 };
 

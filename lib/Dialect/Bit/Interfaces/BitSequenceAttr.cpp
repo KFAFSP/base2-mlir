@@ -161,14 +161,15 @@ DenseBitSequencesAttr::bitCastElements(BitSequenceType elementTy) const
 
 DenseBitSequencesAttr DenseBitSequencesAttr::map(
     UnaryBitSequenceFn fn,
-    BitSequenceType elementTy) const
+    BitSequenceType elementTy,
+    bool allowSplat) const
 {
     // Infer the type of the result.
     if (!elementTy) elementTy = getElementType();
     const auto outTy = getType().cloneWith(std::nullopt, elementTy);
 
     // If this is a splat value, we can produce a new splat.
-    if (isSplat())
+    if (isSplat() && allowSplat)
         return DenseBitSequencesAttr::get(outTy, fn(getSplatValue()));
 
     // Allocate storage for the result elements.
@@ -186,7 +187,8 @@ DenseBitSequencesAttr DenseBitSequencesAttr::map(
 DenseBitSequencesAttr DenseBitSequencesAttr::zip(
     BinaryBitSequenceFn fn,
     DenseBitSequencesAttr rhs,
-    BitSequenceType elementTy) const
+    BitSequenceType elementTy,
+    bool allowSplat) const
 {
     assert(rhs);
     assert(getType().getShape().equals(rhs.getType().getShape()));
@@ -196,7 +198,7 @@ DenseBitSequencesAttr DenseBitSequencesAttr::zip(
     const auto outTy = getType().cloneWith(std::nullopt, elementTy);
 
     // If both are splats, we can create a new splat.
-    if (isSplat() && rhs.isSplat()) {
+    if (isSplat() && rhs.isSplat() && allowSplat) {
         return DenseBitSequencesAttr::get(
             outTy,
             fn(getSplatValue(), rhs.getSplatValue()));
@@ -221,7 +223,8 @@ DenseBitSequencesAttr DenseBitSequencesAttr::zip(
     TernaryBitSequenceFn fn,
     DenseBitSequencesAttr arg1,
     DenseBitSequencesAttr arg2,
-    BitSequenceType elementTy) const
+    BitSequenceType elementTy,
+    bool allowSplat) const
 {
     assert(arg1 && arg2);
     assert(getType().getShape().equals(arg1.getType().getShape()));
@@ -232,7 +235,7 @@ DenseBitSequencesAttr DenseBitSequencesAttr::zip(
     const auto outTy = getType().cloneWith(std::nullopt, elementTy);
 
     // If all are splats, we can create a new splat.
-    if (isSplat() && arg1.isSplat() && arg2.isSplat()) {
+    if (isSplat() && arg1.isSplat() && arg2.isSplat() && allowSplat) {
         return DenseBitSequencesAttr::get(
             outTy,
             fn(getSplatValue(), arg1.getSplatValue(), arg2.getSplatValue()));

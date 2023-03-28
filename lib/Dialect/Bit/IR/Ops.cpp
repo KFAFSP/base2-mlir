@@ -275,20 +275,10 @@ ParseResult SelectOp::parse(OpAsmParser &p, OperationState &result)
 
 OpFoldResult SelectOp::fold(SelectOp::FoldAdaptor adaptor)
 {
-    // Fold trivial equality.
-    if (getTrueValue() == getFalseValue()) return getTrueValue();
-
-    // Fold constant conditionals.
-    if (const auto cond =
-            adaptor.getCondition().dyn_cast_or_null<ValueLikeAttr>()) {
-        return BitFolder::bitSelect(
-            cond,
-            combine(adaptor.getTrueValue(), getTrueValue()),
-            combine(adaptor.getFalseValue(), getFalseValue()));
-    }
-
-    // Otherwise no folding is performed.
-    return OpFoldResult{};
+    return BitFolder::bitSelect(
+        combine(adaptor.getCondition(), getCondition()),
+        combine(adaptor.getTrueValue(), getTrueValue()),
+        combine(adaptor.getFalseValue(), getFalseValue()));
 }
 
 //===----------------------------------------------------------------------===//

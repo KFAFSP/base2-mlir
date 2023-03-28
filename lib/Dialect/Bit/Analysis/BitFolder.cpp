@@ -122,16 +122,20 @@ OpFoldResult BitFolder::bitCmp(
     return {};
 }
 
-ValueLikeAttr BitFolder::bitSelect(
-    ValueLikeAttr condition,
-    ValueLikeAttr trueValue,
-    ValueLikeAttr falseValue)
+ValueOrPoisonLikeAttr BitFolder::bitSelect(
+    ValueOrPoisonLikeAttr condition,
+    ValueOrPoisonLikeAttr trueValue,
+    ValueOrPoisonLikeAttr falseValue)
 {
     assert(condition && trueValue && falseValue);
-    assert(condition.getElementType().isSignlessInteger(1));
-    assert(trueValue.getElementType() == falseValue.getElementType());
+    assert(condition.getType().getElementType().isSignlessInteger(1));
+    assert(trueValue.getType() == falseValue.getType());
     assert(succeeded(
         verifyCompatibleShape(trueValue.getType(), falseValue.getType())));
+
+    // Handle poisoned condition.
+    if (condition.isPoison())
+        return ValueOrPoisonLikeAttr::get(trueValue.getType());
 
     if (const auto cond = condition.dyn_cast<ValueAttr>()) {
         // Quick exit if the condition is just a bool.
@@ -142,30 +146,31 @@ ValueLikeAttr BitFolder::bitSelect(
         verifyCompatibleShape(condition.getType(), trueValue.getType())));
 
     // Perform a three-way zip.
-    const auto denseTrue = trueValue.cast<DenseBitSequencesAttr>();
-    const auto denseFalse = falseValue.cast<DenseBitSequencesAttr>();
-    if (denseTrue.isSplat()) {
-        return condition.zip(
-            [t = denseTrue.value_begin()](
-                const auto &c,
-                const auto &f) mutable { return c.isOnes() ? *t++ : f; },
-            denseFalse,
-            denseFalse.getElementType());
-    }
-    return condition.zip(
-        [f = denseFalse.value_begin()](const auto &c, const auto &t) mutable {
-            return c.isOnes() ? t : *f++;
+    return zip(
+        [](const auto &c, const auto &t, const auto &f) -> ConstOrPoison {
+            if (!c) return poison;
+            return c->isOnes() ? t : f;
         },
-        denseTrue,
-        denseTrue.getElementType());
+        condition,
+        trueValue,
+        falseValue,
+        trueValue.getType().getElementType());
 }
 
 OpFoldResult BitFolder::bitSelect(
-    ValueLikeAttr condition,
+    ValueOrPoisonLikeAttr condition,
     OpFoldResult trueValue,
     OpFoldResult falseValue)
 {
-    assert(condition);
+    assert(condition && trueValue && falseValue);
+
+    // Handle trivial equality.
+    if (trueValue == falseValue) return trueValue;
+
+    // Handle poisoned condition.
+    if (condition.isPoison())
+        return ValueOrPoisonLikeAttr::get(
+            getType(trueValue).cast<BitSequenceLikeType>());
 
     if (const auto cond = condition.dyn_cast<ValueAttr>()) {
         // Quick exit if the condition is just a bool.
@@ -173,13 +178,31 @@ OpFoldResult BitFolder::bitSelect(
     }
 
     // Fold if all values are constant.
-    const auto trueAttr =
-        trueValue.dyn_cast<Attribute>().dyn_cast_or_null<ValueLikeAttr>();
-    const auto falseAttr =
-        falseValue.dyn_cast<Attribute>().dyn_cast_or_null<ValueLikeAttr>();
+    const auto trueAttr = trueValue.dyn_cast<Attribute>()
+                              .dyn_cast_or_null<ValueOrPoisonLikeAttr>();
+    const auto falseAttr = falseValue.dyn_cast<Attribute>()
+                               .dyn_cast_or_null<ValueOrPoisonLikeAttr>();
     if (trueAttr && falseAttr) return bitSelect(condition, trueAttr, falseAttr);
 
-    return OpFoldResult{};
+    return {};
+}
+
+OpFoldResult BitFolder::bitSelect(
+    OpFoldResult condition,
+    OpFoldResult trueValue,
+    OpFoldResult falseValue)
+{
+    assert(condition && trueValue && falseValue);
+
+    // Handle trivial equality.
+    if (trueValue == falseValue) return trueValue;
+
+    // Fold if condition is constant.
+    if (const auto condAttr = condition.dyn_cast<Attribute>()
+                                  .dyn_cast_or_null<ValueOrPoisonLikeAttr>())
+        return bitSelect(condAttr, trueValue, falseValue);
+
+    return {};
 }
 
 ValueLikeAttr BitFolder::bitCmpl(ValueLikeAttr value)

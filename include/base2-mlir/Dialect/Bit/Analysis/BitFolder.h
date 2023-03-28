@@ -70,10 +70,10 @@ public:
     /// @pre    `trueValue.getElementType() == falseValue.getElementType()`
     /// @pre    shapes of @p trueValue and @p falseValue match
     /// @pre    @p condition is scalar, or matches the shape of @p trueValue
-    [[nodiscard]] static ValueLikeAttr bitSelect(
-        ValueLikeAttr condition,
-        ValueLikeAttr trueValue,
-        ValueLikeAttr falseValue);
+    [[nodiscard]] static ValueOrPoisonLikeAttr bitSelect(
+        ValueOrPoisonLikeAttr condition,
+        ValueOrPoisonLikeAttr trueValue,
+        ValueOrPoisonLikeAttr falseValue);
     /// Folds a bit sequence ternary operator.
     ///
     /// @pre    `condition && trueValue && falseValue`
@@ -82,7 +82,18 @@ public:
     /// @pre    shapes of @p trueValue and @p falseValue match
     /// @pre    @p condition is scalar, or matches the shape of @p trueValue
     [[nodiscard]] static OpFoldResult bitSelect(
-        ValueLikeAttr condition,
+        ValueOrPoisonLikeAttr condition,
+        OpFoldResult trueValue,
+        OpFoldResult falseValue);
+    /// Folds a bit sequence ternary operator.
+    ///
+    /// @pre    `condition && trueValue && falseValue`
+    /// @pre    @p condition has an `i1` element type
+    /// @pre    @p trueValue and @p falseValue have the same element type
+    /// @pre    shapes of @p trueValue and @p falseValue match
+    /// @pre    @p condition is scalar, or matches the shape of @p trueValue
+    [[nodiscard]] static OpFoldResult bitSelect(
+        OpFoldResult condition,
         OpFoldResult trueValue,
         OpFoldResult falseValue);
 
