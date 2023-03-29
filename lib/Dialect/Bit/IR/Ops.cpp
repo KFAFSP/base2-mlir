@@ -99,7 +99,7 @@ OpFoldResult CastOp::fold(CastOp::FoldAdaptor adaptor)
         return BitFolder::bitCast(attr, getType());
 
     // Otherwise folding is not performed.
-    return OpFoldResult{};
+    return {};
 }
 
 namespace {
@@ -290,11 +290,12 @@ OpFoldResult AndOp::fold(AndOp::FoldAdaptor adaptor)
     // NOTE: Idempotency is folded by trait.
 
     // Fold if at least one operand is constant (commutative!).
-    if (const auto attr = adaptor.getRhs().dyn_cast_or_null<ValueLikeAttr>())
+    if (const auto attr =
+            adaptor.getRhs().dyn_cast_or_null<ValueOrPoisonLikeAttr>())
         return BitFolder::bitAnd(combine(adaptor.getLhs(), getLhs()), attr);
 
     // Otherwise no folding is performed.
-    return OpFoldResult{};
+    return {};
 }
 
 OpFoldResult OrOp::fold(OrOp::FoldAdaptor adaptor)
@@ -302,28 +303,30 @@ OpFoldResult OrOp::fold(OrOp::FoldAdaptor adaptor)
     // NOTE: Idempotency is folded by trait.
 
     // Fold if at least one operand is constant (commutative!).
-    if (const auto attr = adaptor.getRhs().dyn_cast_or_null<ValueLikeAttr>())
+    if (const auto attr =
+            adaptor.getRhs().dyn_cast_or_null<ValueOrPoisonLikeAttr>())
         return BitFolder::bitOr(combine(adaptor.getLhs(), getLhs()), attr);
 
     // Otherwise no folding is performed.
-    return OpFoldResult{};
+    return {};
 }
 
 OpFoldResult XorOp::fold(XorOp::FoldAdaptor adaptor)
 {
-    // Fold trivial equality.
+    // Fold if at least one operand is constant (commutative!).
+    if (const auto attr =
+            adaptor.getRhs().dyn_cast_or_null<ValueOrPoisonLikeAttr>())
+        return BitFolder::bitXor(combine(adaptor.getLhs(), getLhs()), attr);
+
+    // Fold trivial equality (poison excluded due to above folding).
     if (getLhs() == getRhs()) {
         return ValueLikeAttr::getSplat(
             getType(),
             BitSequence::zeros(getType().getElementType().getBitWidth()));
     }
 
-    // Fold if at least one operand is constant (commutative!).
-    if (const auto attr = adaptor.getRhs().dyn_cast_or_null<ValueLikeAttr>())
-        return BitFolder::bitXor(combine(adaptor.getLhs(), getLhs()), attr);
-
     // Otherwise no folding is performed.
-    return OpFoldResult{};
+    return {};
 }
 
 //===----------------------------------------------------------------------===//
@@ -513,16 +516,14 @@ void ShlOp::getCanonicalizationPatterns(
 OpFoldResult ShlOp::fold(ShlOp::FoldAdaptor adaptor)
 {
     // Shift amount must be known to perform folding.
-    const auto amountAttr = adaptor.getAmount().dyn_cast_or_null<IntegerAttr>();
-    if (!amountAttr) return OpFoldResult{};
-    assert(amountAttr.getType().isIndex());
-    const auto amount = amountAttr.getValue().getZExtValue();
-    if (amount > max_bit_width) return OpFoldResult{};
+    const auto amountAttr =
+        adaptor.getAmount()
+            .dyn_cast_or_null<ub::ValueOrPoisonAttr<IntegerAttr>>();
+    if (!amountAttr) return {};
 
-    // Delegate to BitFolder.
     return BitFolder::bitShl(
         combine(adaptor.getValue(), getValue()),
-        static_cast<bit_width_t>(amount),
+        amountAttr,
         combine(adaptor.getFunnel(), getFunnel()));
 }
 
@@ -598,16 +599,14 @@ LogicalResult ShrOp::verify()
 OpFoldResult ShrOp::fold(ShrOp::FoldAdaptor adaptor)
 {
     // Shift amount must be known to perform folding.
-    const auto amountAttr = adaptor.getAmount().dyn_cast_or_null<IntegerAttr>();
-    if (!amountAttr) return OpFoldResult{};
-    assert(amountAttr.getType().isIndex());
-    const auto amount = amountAttr.getValue().getZExtValue();
-    if (amount > max_bit_width) return OpFoldResult{};
+    const auto amountAttr =
+        adaptor.getAmount()
+            .dyn_cast_or_null<ub::ValueOrPoisonAttr<IntegerAttr>>();
+    if (!amountAttr) return {};
 
-    // Delegate to BitFolder.
     return BitFolder::bitShr(
         combine(adaptor.getValue(), getValue()),
-        static_cast<bit_width_t>(amount),
+        amountAttr,
         combine(adaptor.getFunnel(), getFunnel()));
 }
 
@@ -625,28 +624,34 @@ void ShrOp::getCanonicalizationPatterns(
 OpFoldResult CountOp::fold(CountOp::FoldAdaptor adaptor)
 {
     // Fold if operand is constant.
-    if (const auto attr = adaptor.getValue().dyn_cast_or_null<ValueAttr>())
+    if (const auto attr =
+            adaptor.getValue().dyn_cast_or_null<ValueOrPoisonAttr>())
         return BitFolder::bitCount(attr);
 
-    return OpFoldResult{};
+    // Otherwise no folding is performed.
+    return {};
 }
 
 OpFoldResult ClzOp::fold(ClzOp::FoldAdaptor adaptor)
 {
     // Fold if operand is constant.
-    if (const auto attr = adaptor.getValue().dyn_cast_or_null<ValueAttr>())
+    if (const auto attr =
+            adaptor.getValue().dyn_cast_or_null<ValueOrPoisonAttr>())
         return BitFolder::bitClz(attr);
 
-    return OpFoldResult{};
+    // Otherwise no folding is performed.
+    return {};
 }
 
 OpFoldResult CtzOp::fold(CtzOp::FoldAdaptor adaptor)
 {
     // Fold if operand is constant.
-    if (const auto attr = adaptor.getValue().dyn_cast_or_null<ValueAttr>())
+    if (const auto attr =
+            adaptor.getValue().dyn_cast_or_null<ValueOrPoisonAttr>())
         return BitFolder::bitCtz(attr);
 
-    return OpFoldResult{};
+    // Otherwise no folding is performed.
+    return {};
 }
 
 //===----------------------------------------------------------------------===//

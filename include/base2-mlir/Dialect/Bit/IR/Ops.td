@@ -122,6 +122,7 @@ def Bit_CmpOp : Bit_Op<
             OpAsmOpInterface,
             SameTypeOperands,
             SameOperandsAndResultShape,
+            Commutative,
             TypesMatchWith<
                 "result is i1 of operand shape",
                 "lhs", "result", "::getI1SameShape($_self)">]

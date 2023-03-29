@@ -29,6 +29,22 @@ using namespace mlir::bit;
     return value.dyn_cast<Value>().getType();
 }
 
+/// Gets the splat value of @p attr , if any.
+///
+/// @pre   `attr`
+[[nodiscard]] static std::optional<Const> getSplat(ValueLikeAttr attr)
+{
+    assert(attr);
+
+    if (const auto single = attr.dyn_cast<ValueAttr>())
+        return single.getValue();
+
+    const auto dense = attr.cast<DenseBitSequencesAttr>();
+    if (dense.isSplat()) return dense.getSplatValue();
+
+    return std::nullopt;
+}
+
 //===----------------------------------------------------------------------===//
 // BitFolder
 //===----------------------------------------------------------------------===//
@@ -61,26 +77,14 @@ ValueOrPoisonLikeAttr BitFolder::bitCmp(
         == rhs.getType().getElementType().getBitWidth());
     assert(succeeded(verifyCompatibleShape(lhs.getType(), rhs.getType())));
 
-    // Quick exit for verum and falsum.
-    const auto i1Ty = IntegerType::get(lhs.getContext(), 1);
-    const auto resultTy = lhs.getType().getSameShape(i1Ty);
-    switch (predicate) {
-    case EqualityPredicate::Verum:
-        return BitSequenceLikeAttr::get(resultTy, true);
-    case EqualityPredicate::Falsum:
-        return BitSequenceLikeAttr::get(resultTy, false);
-    default: break;
-    }
-
     // Zip the operands together.
     return zip(
-        [=](const auto &lhs, const auto &rhs) -> ConstOrPoison {
-            if (!lhs || !rhs) return poison;
-            return matches(*lhs == *rhs, predicate);
+        [=](const auto &l, const auto &r) {
+            return bitCmp(predicate == EqualityPredicate::Equal, l, r);
         },
         lhs,
         rhs,
-        i1Ty);
+        IntegerType::get(lhs.getContext(), 1));
 }
 
 OpFoldResult BitFolder::bitCmp(
@@ -97,10 +101,9 @@ OpFoldResult BitFolder::bitCmp(
 
     // Handle trivial predicate.
     switch (predicate) {
-    case EqualityPredicate::Verum:
-        return BitSequenceLikeAttr::getSplat(outTy, true);
+    case EqualityPredicate::Verum: return ValueLikeAttr::getSplat(outTy, true);
     case EqualityPredicate::Falsum:
-        return BitSequenceLikeAttr::getSplat(outTy, false);
+        return ValueLikeAttr::getSplat(outTy, false);
     default: break;
     }
 
@@ -110,7 +113,7 @@ OpFoldResult BitFolder::bitCmp(
 
     // Handle trivial case.
     if (lhs == rhs)
-        return BitSequenceLikeAttr::getSplat(outTy, matches(true, predicate));
+        return ValueLikeAttr::getSplat(outTy, matches(true, predicate));
 
     // Handle constant case.
     const auto lhsAttr =
@@ -130,16 +133,12 @@ ValueOrPoisonLikeAttr BitFolder::bitSelect(
     assert(condition && trueValue && falseValue);
     assert(condition.getType().getElementType().isSignlessInteger(1));
     assert(trueValue.getType() == falseValue.getType());
-    assert(succeeded(
-        verifyCompatibleShape(trueValue.getType(), falseValue.getType())));
 
-    // Handle poisoned condition.
-    if (condition.isPoison())
-        return ValueOrPoisonLikeAttr::get(trueValue.getType());
-
-    if (const auto cond = condition.dyn_cast<ValueAttr>()) {
-        // Quick exit if the condition is just a bool.
-        return cond.getValue().isOnes() ? trueValue : falseValue;
+    if (!condition.isPoisoned()) {
+        if (auto splat = getSplat(condition.getValueAttr())) {
+            // Quick exit if the condition is just a bool.
+            return splat->isZeros() ? falseValue : trueValue;
+        }
     }
 
     assert(succeeded(
@@ -147,9 +146,8 @@ ValueOrPoisonLikeAttr BitFolder::bitSelect(
 
     // Perform a three-way zip.
     return zip(
-        [](const auto &c, const auto &t, const auto &f) -> ConstOrPoison {
-            if (!c) return poison;
-            return c->isOnes() ? t : f;
+        [](const auto &c, const auto &t, const auto &f) {
+            return bitSelect(c, t, f);
         },
         condition,
         trueValue,
@@ -172,9 +170,11 @@ OpFoldResult BitFolder::bitSelect(
         return ValueOrPoisonLikeAttr::get(
             getType(trueValue).cast<BitSequenceLikeType>());
 
-    if (const auto cond = condition.dyn_cast<ValueAttr>()) {
-        // Quick exit if the condition is just a bool.
-        return cond.getValue().isOnes() ? trueValue : falseValue;
+    if (!condition.isPoisoned()) {
+        if (const auto splat = getSplat(condition.getValueAttr())) {
+            // Quick exit if the condition is just a bool.
+            return splat->isZeros() ? falseValue : trueValue;
+        }
     }
 
     // Fold if all values are constant.
@@ -202,113 +202,142 @@ OpFoldResult BitFolder::bitSelect(
                                   .dyn_cast_or_null<ValueOrPoisonLikeAttr>())
         return bitSelect(condAttr, trueValue, falseValue);
 
+    // Fold if boolean pass-through.
+    if (getType(trueValue).isSignlessInteger(1)) {
+        const auto trueAttr =
+            trueValue.dyn_cast<Attribute>().dyn_cast_or_null<BitSequenceAttr>();
+        const auto falseAttr = falseValue.dyn_cast<Attribute>()
+                                   .dyn_cast_or_null<BitSequenceAttr>();
+        if (trueAttr && falseAttr && trueAttr.getValue().isOnes()
+            && falseAttr.getValue().isZeros())
+            return condition;
+    }
+
     return {};
 }
 
-ValueLikeAttr BitFolder::bitCmpl(ValueLikeAttr value)
-{
-    assert(value);
-
-    return value.map([](const auto &val) { return val.logicCmpl(); });
-}
-
-ValueLikeAttr BitFolder::bitAnd(ValueLikeAttr lhs, ValueLikeAttr rhs)
+ValueOrPoisonLikeAttr
+BitFolder::bitAnd(ValueOrPoisonLikeAttr lhs, ValueOrPoisonLikeAttr rhs)
 {
     assert(lhs && rhs);
     assert(lhs.getType() == rhs.getType());
 
-    return lhs.zip(
-        [](const auto &lhs, const auto &rhs) { return lhs.logicAnd(rhs); },
+    // Zip the operands together.
+    return zip(
+        [](const auto &l, const auto &r) { return bitAnd(l, r); },
+        lhs,
         rhs);
 }
 
-OpFoldResult BitFolder::bitAnd(OpFoldResult lhs, ValueLikeAttr rhs)
+OpFoldResult BitFolder::bitAnd(OpFoldResult lhs, ValueOrPoisonLikeAttr rhs)
 {
     assert(lhs && rhs);
 
-    if (const auto attr = rhs.dyn_cast<ValueAttr>()) {
-        if (attr.getValue().isOnes()) return lhs;
-        if (attr.getValue().isZeros()) return rhs;
+    if (!rhs.isPoison()) {
+        // Handle identities with 0 and 1.
+        if (const auto splat = getSplat(rhs.getValueAttr())) {
+            if (splat->isOnes()) return lhs;
+            if (splat->isZeros()) return rhs;
+        }
     }
 
-    if (const auto attr =
-            lhs.dyn_cast<Attribute>().dyn_cast_or_null<ValueLikeAttr>())
-        return bitAnd(attr, rhs);
+    // Fold if all values are constant.
+    if (const auto lhsAttr =
+            lhs.dyn_cast<Attribute>().dyn_cast_or_null<ValueOrPoisonLikeAttr>())
+        return bitAnd(lhsAttr, rhs);
 
-    return OpFoldResult{};
+    return {};
 }
 
-ValueLikeAttr BitFolder::bitOr(ValueLikeAttr lhs, ValueLikeAttr rhs)
+ValueOrPoisonLikeAttr
+BitFolder::bitOr(ValueOrPoisonLikeAttr lhs, ValueOrPoisonLikeAttr rhs)
 {
     assert(lhs && rhs);
     assert(lhs.getType() == rhs.getType());
 
-    return lhs.zip(
-        [](const auto &lhs, const auto &rhs) { return lhs.logicOr(rhs); },
+    return zip(
+        [](const auto &l, const auto &r) { return bitOr(l, r); },
+        lhs,
         rhs);
 }
 
-OpFoldResult BitFolder::bitOr(OpFoldResult lhs, ValueLikeAttr rhs)
+OpFoldResult BitFolder::bitOr(OpFoldResult lhs, ValueOrPoisonLikeAttr rhs)
 {
     assert(lhs && rhs);
 
-    if (const auto attr = rhs.dyn_cast<ValueAttr>()) {
-        if (attr.getValue().isZeros()) return lhs;
-        if (attr.getValue().isOnes()) return rhs;
+    if (!rhs.isPoison()) {
+        // Handle identities with 0 and 1.
+        if (const auto splat = getSplat(rhs.getValueAttr())) {
+            if (splat->isOnes()) return rhs;
+            if (splat->isZeros()) return lhs;
+        }
     }
 
-    if (const auto attr =
-            lhs.dyn_cast<Attribute>().dyn_cast_or_null<ValueLikeAttr>())
-        return bitOr(attr, rhs);
+    // Fold if all values are constant.
+    if (const auto lhsAttr =
+            lhs.dyn_cast<Attribute>().dyn_cast_or_null<ValueOrPoisonLikeAttr>())
+        return bitOr(lhsAttr, rhs);
 
-    return OpFoldResult{};
+    return {};
 }
 
-ValueLikeAttr BitFolder::bitXor(ValueLikeAttr lhs, ValueLikeAttr rhs)
+ValueOrPoisonLikeAttr
+BitFolder::bitXor(ValueOrPoisonLikeAttr lhs, ValueOrPoisonLikeAttr rhs)
 {
     assert(lhs && rhs);
     assert(lhs.getType() == rhs.getType());
 
-    return lhs.zip(
-        [](const auto &lhs, const auto &rhs) { return lhs.logicXor(rhs); },
+    return zip(
+        [](const auto &l, const auto &r) { return bitXor(l, r); },
+        lhs,
         rhs);
 }
 
-OpFoldResult BitFolder::bitXor(OpFoldResult lhs, ValueLikeAttr rhs)
+OpFoldResult BitFolder::bitXor(OpFoldResult lhs, ValueOrPoisonLikeAttr rhs)
 {
     assert(lhs && rhs);
 
-    if (const auto attr = rhs.dyn_cast<ValueAttr>()) {
-        if (attr.getValue().isZeros()) return lhs;
+    if (!rhs.isPoison()) {
+        // Handle identity with 0.
+        if (const auto splat = getSplat(rhs.getValueAttr())) {
+            if (splat->isZeros()) return lhs;
+        }
+    } else {
+        // Handle poisoned operand.
+        return rhs;
     }
 
-    if (const auto attr =
-            lhs.dyn_cast<Attribute>().dyn_cast_or_null<ValueLikeAttr>())
-        return bitXor(attr, rhs);
+    // Fold if all values are constant.
+    if (const auto lhsAttr =
+            lhs.dyn_cast<Attribute>().dyn_cast_or_null<ValueOrPoisonLikeAttr>())
+        return bitXor(lhsAttr, rhs);
 
-    return OpFoldResult{};
+    return {};
 }
 
-ValueLikeAttr
-BitFolder::bitShl(ValueLikeAttr value, bit_width_t amount, ValueLikeAttr funnel)
+ValueOrPoisonLikeAttr BitFolder::bitShl(
+    ValueOrPoisonLikeAttr value,
+    bit_width_t amount,
+    ValueOrPoisonLikeAttr funnel)
 {
     assert(value);
     assert(!funnel || (value.getType() == funnel.getType()));
     const auto elTy = value.getType().getElementType();
     const auto bitWidth = elTy.getBitWidth();
 
-    if (amount == 0) return value;
-    if (amount >= 2 * bitWidth || (!funnel && amount >= bitWidth))
-        return ValueLikeAttr::getSplat(
-            value.getType(),
-            BitSequence::zeros(bitWidth));
+    if (!funnel) {
+        // Perform normal shift.
+        return map(
+            [&](const auto &el) { return bitShl(bitWidth, el, amount); },
+            value);
+    }
 
-    if (!funnel)
-        return value.map(
-            [&](const BitSequence &v) { return v.logicShl(amount); });
-
-    return value.zip(
-        [&](BitSequence v, BitSequence f) { return v.funnelShl(f, amount); },
+    // Perform funnel shift.
+    return zip(
+        [&](const auto &v, const auto &f) {
+            return bitShl(bitWidth, v, f, amount);
+        },
+        value,
         funnel);
 }
 
@@ -316,48 +345,80 @@ OpFoldResult
 BitFolder::bitShl(OpFoldResult value, bit_width_t amount, OpFoldResult funnel)
 {
     assert(value);
-    const auto attr =
-        value.dyn_cast<Attribute>().dyn_cast_or_null<ValueLikeAttr>();
-    const auto valueTy =
-        attr ? attr.getType()
-             : value.dyn_cast<Value>().getType().cast<BitSequenceLikeType>();
-    const auto elTy = valueTy.getElementType();
-    const auto bitWidth = elTy.getBitWidth();
+    const auto valueTy = getType(value).cast<BitSequenceLikeType>();
+    const auto bitWidth = valueTy.getElementType().getBitWidth();
 
+    // Handle neutral case.
     if (amount == 0) return value;
-    if (amount >= 2 * bitWidth || (!funnel && amount >= bitWidth))
-        return ValueLikeAttr::getSplat(valueTy, BitSequence::zeros(bitWidth));
 
-    if (!attr) return OpFoldResult{};
-    if (!funnel) return bitShl(attr, amount);
+    // Handle shift out case.
+    if ((amount >= (2 * bitWidth)) || (!funnel && (amount >= bitWidth)))
+        return ValueLikeAttr::getSplat(valueTy, Const::zeros(bitWidth));
 
-    const auto funnelAttr =
-        funnel.dyn_cast<Attribute>().dyn_cast_or_null<ValueLikeAttr>();
-    if (!funnelAttr) return OpFoldResult{};
+    const auto funnelAttr = funnel
+                                ? funnel.dyn_cast<Attribute>()
+                                      .dyn_cast_or_null<ValueOrPoisonLikeAttr>()
+                                : ValueOrPoisonLikeAttr{};
+    const auto valueAttr =
+        value.dyn_cast<Attribute>().dyn_cast_or_null<ValueOrPoisonLikeAttr>();
 
-    return bitShl(attr, amount, funnelAttr);
+    // Handle dynamic funnel.
+    if (funnel && !funnelAttr) {
+        if (amount < bitWidth && valueAttr && valueAttr.isPoison())
+            return valueAttr;
+        return {};
+    }
+
+    // Handle poisoned funnel.
+    if (funnelAttr && funnelAttr.isPoison()) return funnelAttr;
+
+    // Fold if all values are constant.
+    if (valueAttr) return bitShl(valueAttr, amount, funnelAttr);
+
+    return {};
 }
 
-ValueLikeAttr
-BitFolder::bitShr(ValueLikeAttr value, bit_width_t amount, ValueLikeAttr funnel)
+OpFoldResult BitFolder::bitShl(
+    OpFoldResult value,
+    ub::ValueOrPoisonAttr<IntegerAttr> amount,
+    OpFoldResult funnel)
+{
+    assert(value && amount);
+    assert(amount.getType().isIndex());
+
+    // Handle poisoned amount.
+    if (amount.isPoison()) return ub::PoisonAttr::get(getType(value));
+
+    return bitShl(
+        value,
+        static_cast<bit_width_t>(
+            amount.getValueAttr().getValue().getZExtValue()),
+        funnel);
+}
+
+ValueOrPoisonLikeAttr BitFolder::bitShr(
+    ValueOrPoisonLikeAttr value,
+    bit_width_t amount,
+    ValueOrPoisonLikeAttr funnel)
 {
     assert(value);
     assert(!funnel || (value.getType() == funnel.getType()));
     const auto elTy = value.getType().getElementType();
     const auto bitWidth = elTy.getBitWidth();
 
-    if (amount == 0) return value;
-    if (amount >= 2 * bitWidth || (!funnel && amount >= bitWidth))
-        return ValueLikeAttr::getSplat(
-            value.getType(),
-            BitSequence::zeros(bitWidth));
+    if (!funnel) {
+        // Perform normal shift.
+        return map(
+            [&](const auto &el) { return bitShr(bitWidth, el, amount); },
+            value);
+    }
 
-    if (!funnel)
-        return value.map(
-            [&](const BitSequence &v) { return v.logicShr(amount); });
-
-    return value.zip(
-        [&](BitSequence v, BitSequence f) { return v.funnelShr(f, amount); },
+    // Perform funnel shift.
+    return zip(
+        [&](const auto &v, const auto &f) {
+            return bitShr(bitWidth, v, f, amount);
+        },
+        value,
         funnel);
 }
 
@@ -365,24 +426,53 @@ OpFoldResult
 BitFolder::bitShr(OpFoldResult value, bit_width_t amount, OpFoldResult funnel)
 {
     assert(value);
-    const auto attr =
-        value.dyn_cast<Attribute>().dyn_cast_or_null<ValueLikeAttr>();
-    const auto valueTy =
-        attr ? attr.getType()
-             : value.dyn_cast<Value>().getType().cast<BitSequenceLikeType>();
-    const auto elTy = valueTy.getElementType();
-    const auto bitWidth = elTy.getBitWidth();
+    const auto valueTy = getType(value).cast<BitSequenceLikeType>();
+    const auto bitWidth = valueTy.getElementType().getBitWidth();
 
+    // Handle neutral case.
     if (amount == 0) return value;
-    if (amount >= 2 * bitWidth || (!funnel && amount >= bitWidth))
-        return ValueLikeAttr::getSplat(valueTy, BitSequence::zeros(bitWidth));
 
-    if (!attr) return OpFoldResult{};
-    if (!funnel) return bitShr(attr, amount);
+    // Handle shift out case.
+    if ((amount >= (2 * bitWidth)) || (!funnel && (amount >= bitWidth)))
+        return ValueLikeAttr::getSplat(valueTy, Const::zeros(bitWidth));
 
-    const auto funnelAttr =
-        funnel.dyn_cast<Attribute>().dyn_cast_or_null<ValueLikeAttr>();
-    if (!funnelAttr) return OpFoldResult{};
+    const auto funnelAttr = funnel
+                                ? funnel.dyn_cast<Attribute>()
+                                      .dyn_cast_or_null<ValueOrPoisonLikeAttr>()
+                                : ValueOrPoisonLikeAttr{};
+    const auto valueAttr =
+        value.dyn_cast<Attribute>().dyn_cast_or_null<ValueOrPoisonLikeAttr>();
 
-    return bitShr(attr, amount, funnelAttr);
+    // Handle dynamic funnel.
+    if (funnel && !funnelAttr) {
+        if (amount < bitWidth && valueAttr && valueAttr.isPoison())
+            return valueAttr;
+        return {};
+    }
+
+    // Handle poisoned funnel.
+    if (funnelAttr && funnelAttr.isPoison()) return funnelAttr;
+
+    // Fold if all values are constant.
+    if (valueAttr) return bitShr(valueAttr, amount, funnelAttr);
+
+    return {};
+}
+
+OpFoldResult BitFolder::bitShr(
+    OpFoldResult value,
+    ub::ValueOrPoisonAttr<IntegerAttr> amount,
+    OpFoldResult funnel)
+{
+    assert(value && amount);
+    assert(amount.getType().isIndex());
+
+    // Handle poisoned amount.
+    if (amount.isPoison()) return ub::PoisonAttr::get(getType(value));
+
+    return bitShr(
+        value,
+        static_cast<bit_width_t>(
+            amount.getValueAttr().getValue().getZExtValue()),
+        funnel);
 }
