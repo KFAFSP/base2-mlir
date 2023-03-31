@@ -21,7 +21,7 @@ def Bit_ShiftOp : OpInterface<"ShiftOp"> {
             /*desc=*/[{
                 Gets the value with the bits to be shifted.
             }],
-            /*retTy=*/"TypedValue<BitSequenceType>",
+            /*retTy=*/"TypedValue<BitSequenceLikeType>",
             /*methodName=*/"getValue",
             /*args=*/(ins),
             /*methodBody=*/"",
@@ -30,7 +30,7 @@ def Bit_ShiftOp : OpInterface<"ShiftOp"> {
             /*desc=*/[{
                 Gets the value with the funnel bits.
             }],
-            /*retTy=*/"TypedValue<BitSequenceType>",
+            /*retTy=*/"TypedValue<BitSequenceLikeType>",
             /*methodName=*/"getFunnel",
             /*args=*/(ins),
             /*methodBody=*/"",
@@ -41,6 +41,15 @@ def Bit_ShiftOp : OpInterface<"ShiftOp"> {
             }],
             /*retTy=*/"TypedValue<IndexType>",
             /*methodName=*/"getAmount",
+            /*args=*/(ins),
+            /*methodBody=*/"",
+            /*defaultImplementation=*/"">,
+        InterfaceMethod<
+            /*desc=*/[{
+                Gets the result value.
+            }],
+            /*retTy=*/"TypedValue<BitSequenceLikeType>",
+            /*methodName=*/"getResult",
             /*args=*/(ins),
             /*methodBody=*/"",
             /*defaultImplementation=*/"">,

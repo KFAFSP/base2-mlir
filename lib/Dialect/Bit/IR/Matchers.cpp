@@ -1,14 +1,15 @@
-/// Implements poison semantics for the Bit dialect.
+/// Implements IR matchers for the Bit dialect.
 ///
 /// @file
 /// @author     Karl F. A. Friebel (karl.friebel@tu-dresden.de)
 
-#include "base2-mlir/Dialect/Bit/Analysis/PoisonSema.h"
+#include "base2-mlir/Dialect/Bit/IR/Matchers.h"
 
 #include <numeric>
 
 using namespace mlir;
 using namespace mlir::bit;
+using namespace mlir::bit::match;
 
 /// Gets the number of elements contained in @p type .
 ///
@@ -32,80 +33,46 @@ using namespace mlir::bit;
 /// Make a valid default value for @p elementTy .
 ///
 /// @pre    `elementTy`
-[[nodiscard]] static Const makeDefault(BitSequenceType elementTy)
+[[nodiscard]] static BitSequence makeDefault(BitSequenceType elementTy)
 {
     return BitSequence::zeros(elementTy.getBitWidth());
 }
 
-/// Make a result attribute for @p splatValue and @p resultTy .
-///
-/// @pre    `resultTy`
-[[nodiscard]] static ValueOrPoisonLikeAttr
-makeResult(ConstOrPoison splatValue, BitSequenceLikeType resultTy)
-{
-    assert(resultTy);
-
-    // Make a fully poisoned value.
-    if (!splatValue) return ValueOrPoisonLikeAttr::get(resultTy);
-
-    // Make an unpoisoned value.
-    return BitSequenceLikeAttr::getSplat(resultTy, *splatValue);
-}
-
-/// Make a result attribute for @p value and @p poisonMask .
-///
-/// @pre    `value`
-[[nodiscard]] static ValueOrPoisonLikeAttr
-makeResult(ValueLikeAttr value, const llvm::APInt &poisonMask)
-{
-    assert(value);
-
-    // Handle quick canonicalization cases.
-    if (poisonMask.isAllOnes())
-        return ValueOrPoisonLikeAttr::get(value.getType());
-    if (poisonMask.isZero()) return value;
-
-    // Make a partially poisoned value.
-    return ValueOrPoisonLikeAttr::get("bit", value, poisonMask);
-}
-
-/// Make a ConstOrPoison value from @p isPoison and @p value .
-[[nodiscard]] static ConstOrPoison select(bool isPoison, const Const &value)
+/// Make an std::optional<BitSequence> value from @p isPoison and @p value .
+[[nodiscard]] static std::optional<BitSequence>
+orPoison(bool isPoison, const BitSequence &value)
 {
     if (isPoison) return poison;
     return value;
 }
 
 //===----------------------------------------------------------------------===//
-// Constant folding
+// ConstOrPoison
 //===----------------------------------------------------------------------===//
 
-ValueOrPoisonLikeAttr mlir::bit::map(
-    UnaryFn fn,
-    ValueOrPoisonLikeAttr attr,
-    BitSequenceType elementTy)
+ConstOrPoison ConstOrPoison::map(
+    function_ref<ConstOrPoison::UnaryFn> fn,
+    BitSequenceType elementTy) const
 {
-    assert(attr);
-
     // Infer the type of the result.
-    const auto inTy = attr.getType().cast<BitSequenceLikeType>();
+    const auto inTy = getType();
     if (!elementTy) elementTy = inTy.getElementType();
     const auto outTy = inTy.getSameShape(elementTy);
 
     // Deal with fully poisoned values.
-    if (attr.isPoison()) return makeResult(fn(poison), outTy);
+    if (isPoison()) return getSplat(outTy, fn(poison));
 
     // Prepare the poison masks.
     const auto numElements = getNumElements(inTy);
     assert(numElements != ShapedType::kDynamic);
-    const auto inMask = attr.getPoisonMask().zextOrTrunc(numElements);
+    const auto inMask = getPoisonMask().zextOrTrunc(numElements);
     llvm::APInt outMask(numElements, 0UL);
     std::size_t idx = 0;
 
     // Compute the value attribute.
-    const auto valueAttr = attr.getValueAttr().map(
+    const auto valueAttr = getValueAttr().map(
         [&](const auto &el) -> BitSequence {
-            const auto result = fn(select(inMask[idx], el));
+            const auto result = fn(orPoison(inMask[idx], el));
             if (!result) outMask.setBit(idx);
             ++idx;
             return result.value_or(makeDefault(elementTy));
@@ -113,13 +80,13 @@ ValueOrPoisonLikeAttr mlir::bit::map(
         elementTy,
         false);
 
-    return makeResult(valueAttr, outMask);
+    return get(valueAttr, outMask);
 }
 
-ValueOrPoisonLikeAttr mlir::bit::zip(
-    BinaryFn fn,
-    ValueOrPoisonLikeAttr lhs,
-    ValueOrPoisonLikeAttr rhs,
+[[nodiscard]] static ConstOrPoison zipImpl(
+    function_ref<ConstOrPoison::BinaryFn> fn,
+    ConstOrPoison lhs,
+    ConstOrPoison rhs,
     BitSequenceType elementTy)
 {
     assert(lhs && rhs);
@@ -131,7 +98,7 @@ ValueOrPoisonLikeAttr mlir::bit::zip(
 
     // Deal with fully poisoned values.
     if (lhs.isPoison() && rhs.isPoison())
-        return makeResult(fn(poison, poison), outTy);
+        return ConstOrPoison::getSplat(outTy, fn(poison, poison));
 
     // Make sure lhs is not fully poisoned.
     if (lhs.isPoison()) {
@@ -150,7 +117,7 @@ ValueOrPoisonLikeAttr mlir::bit::zip(
         // Use map instead of zip.
         const auto valueAttr = lhs.getValueAttr().map(
             [&](const auto &el) -> BitSequence {
-                const auto result = fn(select(lhsMask[idx], el), poison);
+                const auto result = fn(orPoison(lhsMask[idx], el), poison);
                 if (!result) outMask.setBit(idx);
                 ++idx;
                 return result.value_or(makeDefault(elementTy));
@@ -158,7 +125,7 @@ ValueOrPoisonLikeAttr mlir::bit::zip(
             elementTy,
             false);
 
-        return makeResult(valueAttr, outMask);
+        return ConstOrPoison::get(valueAttr, outMask);
     }
 
     // Use binary zip.
@@ -166,7 +133,7 @@ ValueOrPoisonLikeAttr mlir::bit::zip(
     const auto valueAttr = lhs.getValueAttr().zip(
         [&](const auto &l, const auto &r) -> BitSequence {
             const auto result =
-                fn(select(lhsMask[idx], l), select(rhsMask[idx], r));
+                fn(orPoison(lhsMask[idx], l), orPoison(rhsMask[idx], r));
             if (!result) outMask.setBit(idx);
             ++idx;
             return result.value_or(makeDefault(elementTy));
@@ -175,14 +142,22 @@ ValueOrPoisonLikeAttr mlir::bit::zip(
         elementTy,
         false);
 
-    return makeResult(valueAttr, outMask);
+    return ConstOrPoison::get(valueAttr, outMask);
 }
 
-ValueOrPoisonLikeAttr mlir::bit::zip(
-    TernaryFn fn,
-    ValueOrPoisonLikeAttr arg0,
-    ValueOrPoisonLikeAttr arg1,
-    ValueOrPoisonLikeAttr arg2,
+ConstOrPoison ConstOrPoison::zip(
+    function_ref<ConstOrPoison::BinaryFn> fn,
+    ConstOrPoison rhs,
+    BitSequenceType elementTy) const
+{
+    return zipImpl(fn, *this, rhs, elementTy);
+}
+
+[[nodiscard]] static ConstOrPoison zipImpl(
+    function_ref<ConstOrPoison::TernaryFn> fn,
+    ConstOrPoison arg0,
+    ConstOrPoison arg1,
+    ConstOrPoison arg2,
     BitSequenceType elementTy)
 {
     assert(arg0 && arg1 && arg2);
@@ -194,7 +169,7 @@ ValueOrPoisonLikeAttr mlir::bit::zip(
 
     // Deal with fully poisoned values.
     if (arg0.isPoison() && arg1.isPoison() && arg2.isPoison())
-        return makeResult(fn(poison, poison, poison), outTy);
+        return ConstOrPoison::getSplat(outTy, fn(poison, poison, poison));
 
     // Make sure arg0 is not fully poisoned.
     if (arg0.isPoison()) {
@@ -231,7 +206,8 @@ ValueOrPoisonLikeAttr mlir::bit::zip(
         // Use map instead of zip.
         const auto valueAttr = arg0.getValueAttr().map(
             [&](const auto &el) -> BitSequence {
-                const auto result = fn(select(mask0[idx], el), poison, poison);
+                const auto result =
+                    fn(orPoison(mask0[idx], el), poison, poison);
                 if (!result) outMask.setBit(idx);
                 ++idx;
                 return result.value_or(makeDefault(elementTy));
@@ -239,7 +215,7 @@ ValueOrPoisonLikeAttr mlir::bit::zip(
             elementTy,
             false);
 
-        return makeResult(valueAttr, outMask);
+        return ConstOrPoison::get(valueAttr, outMask);
     }
 
     const auto mask1 = arg1.getPoisonMask().zextOrTrunc(numElements);
@@ -248,7 +224,9 @@ ValueOrPoisonLikeAttr mlir::bit::zip(
         const auto valueAttr = arg0.getValueAttr().zip(
             [&](const auto &l, const auto &r) -> BitSequence {
                 const auto result =
-                    fn(select(mask0[idx], l), select(mask1[idx], r), poison);
+                    fn(orPoison(mask0[idx], l),
+                       orPoison(mask1[idx], r),
+                       poison);
                 if (!result) outMask.setBit(idx);
                 ++idx;
                 return result.value_or(makeDefault(elementTy));
@@ -257,7 +235,7 @@ ValueOrPoisonLikeAttr mlir::bit::zip(
             elementTy,
             false);
 
-        return makeResult(valueAttr, outMask);
+        return ConstOrPoison::get(valueAttr, outMask);
     }
 
     // Use ternary zip.
@@ -265,9 +243,9 @@ ValueOrPoisonLikeAttr mlir::bit::zip(
     const auto valueAttr = arg0.getValueAttr().zip(
         [&](const auto &a, const auto &b, const auto &c) -> BitSequence {
             const auto result =
-                fn(select(mask0[idx], a),
-                   select(mask1[idx], b),
-                   select(mask2[idx], c));
+                fn(orPoison(mask0[idx], a),
+                   orPoison(mask1[idx], b),
+                   orPoison(mask2[idx], c));
             if (!result) outMask.setBit(idx);
             ++idx;
             return result.value_or(makeDefault(elementTy));
@@ -277,5 +255,14 @@ ValueOrPoisonLikeAttr mlir::bit::zip(
         elementTy,
         false);
 
-    return makeResult(valueAttr, outMask);
+    return ConstOrPoison::get(valueAttr, outMask);
+}
+
+ConstOrPoison ConstOrPoison::zip(
+    function_ref<ConstOrPoison::TernaryFn> fn,
+    ConstOrPoison arg1,
+    ConstOrPoison arg2,
+    BitSequenceType elementTy) const
+{
+    return zipImpl(fn, *this, arg1, arg2, elementTy);
 }

@@ -179,6 +179,19 @@ func.func @and_min(%arg0: i64) -> (i64, i64) {
     return %0, %1 : i64, i64
 }
 
+// and x, 2^N-1 = x
+// CHECK-LABEL: func.func @and_max(
+// CHECK-SAME: %[[ARG0:.+]]: i64
+func.func @and_max(%arg0: i64) -> (i64, i64) {
+    // CHECK-DAG: %[[POISON:.+]] = ub.poison : i64
+    %cst2Nm1 = bit.constant -1 : i64
+    %poison = ub.poison : i64
+    %0 = bit.and %arg0, %cst2Nm1 : i64
+    %1 = bit.and %poison, %cst2Nm1 : i64
+    // CHECK: return %[[ARG0]], %[[POISON]]
+    return %0, %1 : i64, i64
+}
+
 //===----------------------------------------------------------------------===//
 // or
 //===----------------------------------------------------------------------===//
@@ -235,9 +248,9 @@ func.func @or_max(%arg0: i64) -> (i64, i64) {
 }
 
 // or x, 0 = x
-// CHECK-LABEL: func.func @or_trivial(
+// CHECK-LABEL: func.func @or_min(
 // CHECK-SAME: %[[ARG0:.+]]: i64
-func.func @or_trivial(%arg0: i64) -> (i64, i64) {
+func.func @or_min(%arg0: i64) -> (i64, i64) {
     // CHECK-DAG: %[[POISON:.+]] = ub.poison : i64
     %poison = ub.poison : i64
     %cst0 = bit.constant 0 : i64
@@ -278,21 +291,23 @@ func.func @xor_zero(%arg0: i64) -> i64 {
     return %0 : i64
 }
 
-// xor ?, poison = poison
+// xor poison, poison = poison
 // CHECK-LABEL: func.func @xor_poison(
+// CHECK-SAME: %[[ARG0:.+]]: i64
 func.func @xor_poison(%arg0: i64) -> (i64, i64) {
     // CHECK-DAG: %[[POISON:.+]] = ub.poison : i64
     %poison = ub.poison : i64
+    // CHECK-DAG: %[[XOR:.+]] = bit.xor %[[ARG0]], %[[POISON]]
     %0 = bit.xor %arg0, %poison : i64
     %1 = bit.xor %poison, %poison : i64
-    // return %[[POISON]], %[[POISON]]
+    // return %[[XOR]], %[[POISON]]
     return %0, %1 : i64, i64
 }
 
 // xor x, 0 = x
-// CHECK-LABEL: func.func @xor_trivial(
+// CHECK-LABEL: func.func @xor_min(
 // CHECK-SAME: %[[ARG0:.+]]: i64
-func.func @xor_trivial(%arg0: i64) -> (i64, i64) {
+func.func @xor_min(%arg0: i64) -> (i64, i64) {
     // CHECK-DAG: %[[POISON:.+]] = ub.poison : i64
     %poison = ub.poison : i64
     %cst0 = bit.constant 0 : i64
@@ -346,13 +361,13 @@ func.func @shl_zero(%arg0: i64, %arg1: i64) -> (i64, i64, i64, i64, i64) {
 // CHECK-SAME: %[[ARG0:.+]]: i64
 func.func @shl_poison(%arg0: i64) -> (i64, i64, i64, i64, i64) {
     // CHECK-DAG: %[[POISON:.+]] = ub.poison : i64
-    // CHECK-DAG: %[[CST127:.+]] = index.constant 127
+    // CHECK-DAG: %[[CST63:.+]] = index.constant 63
     %poisoni64 = ub.poison : i64
     %cst63 = index.constant 63
     %cst127 = index.constant 127
     %0 = bit.shl %poisoni64, %cst63 : i64
     %1 = bit.shl %arg0:%poisoni64, %cst127 : i64
-    // CHECK-DAG: %[[SHL:.+]] = bit.shl %[[POISON]]:%[[ARG0]], %[[CST127]]
+    // CHECK-DAG: %[[SHL:.+]] = bit.shl %[[ARG0]], %[[CST63]]
     %2 = bit.shl %poisoni64:%arg0, %cst127 : i64
     %3 = bit.shl %poisoni64:%arg0, %cst63 : i64
     %4 = bit.shl %poisoni64:%poisoni64, %cst127 : i64
@@ -362,8 +377,9 @@ func.func @shl_poison(%arg0: i64) -> (i64, i64, i64, i64, i64) {
 
 // shl ?, poison   = poison
 // shl ?:?, poison = poison
-// CHECK-LABEL: func.func @shl_poison_idx(
-func.func @shl_poison_idx(%arg0: i64, %arg1: i64) -> (i64, i64, i64, i64, i64) {
+// CHECK-LABEL: func.func @shl_poison_amount(
+func.func @shl_poison_amount(%arg0: i64, %arg1: i64)
+        -> (i64, i64, i64, i64, i64) {
     // CHECK-DAG: %[[POISON:.+]] = ub.poison : i64
     %poisonidx = ub.poison : index
     %poisoni64 = ub.poison : i64
@@ -420,13 +436,13 @@ func.func @shr_zero(%arg0: i64, %arg1: i64) -> (i64, i64, i64, i64, i64) {
 // CHECK-SAME: %[[ARG0:.+]]: i64
 func.func @shr_poison(%arg0: i64) -> (i64, i64, i64, i64, i64) {
     // CHECK-DAG: %[[POISON:.+]] = ub.poison : i64
-    // CHECK-DAG: %[[CST127:.+]] = index.constant 127
+    // CHECK-DAG: %[[CST63:.+]] = index.constant 63
     %poisoni64 = ub.poison : i64
     %cst63 = index.constant 63
     %cst127 = index.constant 127
     %0 = bit.shr %poisoni64, %cst63 : i64
     %1 = bit.shr %arg0:%poisoni64, %cst63 : i64
-    // CHECK-DAG: %[[SHR:.+]] = bit.shr %[[ARG0]]:%[[POISON]], %[[CST127]]
+    // CHECK-DAG: %[[SHR:.+]] = bit.shr %[[ARG0]], %[[CST63]]
     %2 = bit.shr %arg0:%poisoni64, %cst127 : i64
     %3 = bit.shr %poisoni64:%arg0, %cst127 : i64
     %4 = bit.shr %poisoni64:%poisoni64, %cst127 : i64

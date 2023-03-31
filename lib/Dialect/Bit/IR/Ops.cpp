@@ -5,7 +5,8 @@
 
 #include "base2-mlir/Dialect/Bit/IR/Ops.h"
 
-#include "base2-mlir/Dialect/Bit/Analysis/BitFolder.h"
+#include "base2-mlir/Dialect/Bit/IR/Folders.h"
+#include "base2-mlir/Dialect/Bit/IR/Matchers.h"
 #include "base2-mlir/Utils.h"
 #include "mlir/IR/OpImplementation.h"
 #include "mlir/IR/PatternMatch.h"
@@ -35,7 +36,8 @@ LogicalResult ConstantOp::inferReturnTypes(
     RegionRange,
     SmallVectorImpl<Type> &result)
 {
-    const auto value = attributes.getAs<ValueLikeAttr>(getAttributeNames()[0]);
+    const auto value =
+        attributes.getAs<BitSequenceLikeAttr>(getAttributeNames()[0]);
     if (!value) return failure();
 
     result.push_back(value.getType());
@@ -80,9 +82,9 @@ bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs)
     assert(inputs.size() == 1 && outputs.size() == 1);
 
     const auto inTy =
-        getElementTypeOrSelf(inputs[0]).dyn_cast<BitSequenceType>();
+        llvm::dyn_cast<BitSequenceType>(getElementTypeOrSelf(inputs[0]));
     const auto outTy =
-        getElementTypeOrSelf(outputs[0]).dyn_cast<BitSequenceType>();
+        llvm::dyn_cast<BitSequenceType>(getElementTypeOrSelf(outputs[0]));
     if (!inTy || !outTy) return false;
 
     return inTy.getBitWidth() == outTy.getBitWidth();
@@ -90,16 +92,7 @@ bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs)
 
 OpFoldResult CastOp::fold(CastOp::FoldAdaptor adaptor)
 {
-    // Fold no-op casts.
-    if (getType() == getIn().getType()) return getIn();
-
-    // Fold constant bit casts.
-    if (const auto attr =
-            adaptor.getIn().dyn_cast_or_null<ValueOrPoisonLikeAttr>())
-        return BitFolder::bitCast(attr, getType());
-
-    // Otherwise folding is not performed.
-    return {};
+    return BitFolder::bitCast(*this, adaptor.getOperands());
 }
 
 namespace {
@@ -142,10 +135,7 @@ void CastOp::getCanonicalizationPatterns(
 
 OpFoldResult CmpOp::fold(CmpOp::FoldAdaptor adaptor)
 {
-    return BitFolder::bitCmp(
-        getPredicate(),
-        combine(adaptor.getLhs(), getLhs()),
-        combine(adaptor.getRhs(), getRhs()));
+    return BitFolder::bitCmp(*this, adaptor.getOperands());
 }
 
 namespace {
@@ -163,36 +153,26 @@ struct BooleanComparison : OpRewritePattern<CmpOp> {
         default: break;
         }
 
-        // Look for an operation on booleans with a right-hand constant.
+        // Look for an operation on booleans with a right-hand splat constant.
         if (!op.getLhs().getType().getElementType().isSignlessInteger(1))
             return failure();
-        const auto rhsAttr = getConstantValue(op.getRhs());
-        if (!rhsAttr) return failure();
+        const auto rhs =
+            llvm::dyn_cast_or_null<match::Splat>(getConstantValue(op.getRhs()));
+        if (!rhs) return failure();
 
-        // Determine the splat value of the right-hand constant.
-        bool rhsVal;
-        if (const auto rhsDense = rhsAttr.dyn_cast<DenseBitSequencesAttr>()) {
-            if (!rhsDense.isSplat()) {
-                // We could technically break apart this operation, but we
-                // leave that to a later pass after de-tensorization.
-                return failure();
-            }
-            rhsVal = rhsDense.getSplatValue().isOnes();
-        } else {
-            rhsVal = rhsAttr.cast<ValueAttr>().getValue().isOnes();
-        }
-
-        if ((op.getPredicate() == EqualityPredicate::Equal) == rhsVal) {
+        if ((op.getPredicate() == EqualityPredicate::Equal)
+            == rhs.getValue().isOnes()) {
             // Operation is useless.
             rewriter.replaceOp(op, op.getLhs());
         } else {
             // Operation is a bitwise complement.
-            const auto mask =
-                rewriter
-                    .create<ConstantOp>(
-                        op.getLoc(),
-                        ValueLikeAttr::getSplat(op.getRhs().getType(), true))
-                    .getResult();
+            const auto mask = rewriter
+                                  .create<ConstantOp>(
+                                      op.getLoc(),
+                                      BitSequenceLikeAttr::getSplat(
+                                          op.getRhs().getType(),
+                                          true))
+                                  .getResult();
             rewriter.replaceOpWithNewOp<XorOp>(op, op.getLhs(), mask);
         }
 
@@ -225,7 +205,8 @@ void SelectOp::print(OpAsmPrinter &p)
     p << " : ";
 
     // [type($condition) `,`]
-    if (const auto condType = getCondition().getType().dyn_cast<ShapedType>())
+    if (const auto condType =
+            llvm::dyn_cast<ShapedType>(getCondition().getType()))
         p << condType << ", ";
 
     // type($result)
@@ -275,10 +256,61 @@ ParseResult SelectOp::parse(OpAsmParser &p, OperationState &result)
 
 OpFoldResult SelectOp::fold(SelectOp::FoldAdaptor adaptor)
 {
-    return BitFolder::bitSelect(
-        combine(adaptor.getCondition(), getCondition()),
-        combine(adaptor.getTrueValue(), getTrueValue()),
-        combine(adaptor.getFalseValue(), getFalseValue()));
+    return BitFolder::bitSelect(*this, adaptor.getOperands());
+}
+
+namespace {
+
+struct BooleanSelect : OpRewritePattern<SelectOp> {
+    using OpRewritePattern::OpRewritePattern;
+
+    LogicalResult
+    matchAndRewrite(SelectOp op, PatternRewriter &rewriter) const override
+    {
+        // Look for select ops returning boolean(s).
+        if (!op.getType().getElementType().isSignlessInteger(1))
+            return failure();
+
+        // Look for splat alternative operands.
+        const auto trueSplat = llvm::dyn_cast_or_null<match::Splat>(
+            getConstantValue(op.getTrueValue()));
+        const auto falseSplat = llvm::dyn_cast_or_null<match::Splat>(
+            getConstantValue(op.getFalseValue()));
+        if (!trueSplat || !falseSplat) return failure();
+
+        if (trueSplat.getValue().isOnes() && falseSplat.getValue().isZeros()) {
+            // Trivial boolean pass-through.
+            rewriter.replaceOp(op, op.getCondition());
+            return success();
+        }
+
+        if (trueSplat.getValue().isZeros() && falseSplat.getValue().isOnes()) {
+            // Bitwise complement.
+            rewriter.replaceOpWithNewOp<XorOp>(
+                op,
+                op.getCondition(),
+                rewriter
+                    .create<ConstantOp>(
+                        op.getLoc(),
+                        match::Const::getSplat(
+                            llvm::cast<BitSequenceLikeType>(
+                                op.getCondition().getType()),
+                            true))
+                    .getResult());
+            return success();
+        }
+
+        return failure();
+    }
+};
+
+} // namespace
+
+void SelectOp::getCanonicalizationPatterns(
+    RewritePatternSet &patterns,
+    MLIRContext* context)
+{
+    patterns.add<BooleanSelect>(context);
 }
 
 //===----------------------------------------------------------------------===//
@@ -287,46 +319,17 @@ OpFoldResult SelectOp::fold(SelectOp::FoldAdaptor adaptor)
 
 OpFoldResult AndOp::fold(AndOp::FoldAdaptor adaptor)
 {
-    // NOTE: Idempotency is folded by trait.
-
-    // Fold if at least one operand is constant (commutative!).
-    if (const auto attr =
-            adaptor.getRhs().dyn_cast_or_null<ValueOrPoisonLikeAttr>())
-        return BitFolder::bitAnd(combine(adaptor.getLhs(), getLhs()), attr);
-
-    // Otherwise no folding is performed.
-    return {};
+    return BitFolder::bitAnd(*this, adaptor.getOperands());
 }
 
 OpFoldResult OrOp::fold(OrOp::FoldAdaptor adaptor)
 {
-    // NOTE: Idempotency is folded by trait.
-
-    // Fold if at least one operand is constant (commutative!).
-    if (const auto attr =
-            adaptor.getRhs().dyn_cast_or_null<ValueOrPoisonLikeAttr>())
-        return BitFolder::bitOr(combine(adaptor.getLhs(), getLhs()), attr);
-
-    // Otherwise no folding is performed.
-    return {};
+    return BitFolder::bitOr(*this, adaptor.getOperands());
 }
 
 OpFoldResult XorOp::fold(XorOp::FoldAdaptor adaptor)
 {
-    // Fold if at least one operand is constant (commutative!).
-    if (const auto attr =
-            adaptor.getRhs().dyn_cast_or_null<ValueOrPoisonLikeAttr>())
-        return BitFolder::bitXor(combine(adaptor.getLhs(), getLhs()), attr);
-
-    // Fold trivial equality (poison excluded due to above folding).
-    if (getLhs() == getRhs()) {
-        return ValueLikeAttr::getSplat(
-            getType(),
-            BitSequence::zeros(getType().getElementType().getBitWidth()));
-    }
-
-    // Otherwise no folding is performed.
-    return {};
+    return BitFolder::bitXor(*this, adaptor.getOperands());
 }
 
 //===----------------------------------------------------------------------===//
@@ -343,11 +346,10 @@ struct ZeroFunnel : OpRewritePattern<Op> {
     matchAndRewrite(Op op, PatternRewriter &rewriter) const override
     {
         // Look for a constant zeros funnel.
-        const auto funnel = op.getFunnel();
-        if (!funnel) return failure();
-        const auto funnelAttr =
-            cast_or_null<ValueAttr>(getConstantValue(funnel));
-        if (!funnelAttr || !funnelAttr.getValue().isZeros()) return failure();
+        const auto funnelValue = op.getFunnel();
+        if (!funnelValue) return failure();
+        if (!llvm::isa_and_present<match::Zeros>(getConstantValue(funnelValue)))
+            return failure();
 
         // Remove the funnel operand.
         const auto resultOp = rewriter.replaceOpWithNewOp<Op>(
@@ -355,6 +357,34 @@ struct ZeroFunnel : OpRewritePattern<Op> {
             op.getValue(),
             op.getAmount(),
             Value{});
+        resultOp->setAttrs(op->getAttrs());
+        return success();
+    }
+};
+
+template<class Op>
+struct FunnelOnly : OpRewritePattern<Op> {
+    using OpRewritePattern<Op>::OpRewritePattern;
+
+    LogicalResult
+    matchAndRewrite(Op op, PatternRewriter &rewriter) const override
+    {
+        // Look for funnel shifts with a constant amount.
+        if (!op.getFunnel()) return failure();
+        const auto amount = llvm::dyn_cast_or_null<match::ConstIndex>(
+            getConstantValue(op.getAmount()));
+        if (!amount) return failure();
+
+        // Look for shift amounts that shift out the value.
+        const auto bitWidth = op.getType().getElementType().getBitWidth();
+        if (amount < bitWidth) return failure();
+
+        // Remove the value operand.
+        const auto resultOp = rewriter.replaceOpWithNewOp<Op>(
+            op,
+            op.getFunnel(),
+            rewriter.create<index::ConstantOp>(op.getLoc(), amount - bitWidth)
+                .getResult());
         resultOp->setAttrs(op->getAttrs());
         return success();
     }
@@ -380,20 +410,16 @@ struct BalanceRotations : OpRewritePattern<Op> {
         }
 
         // Operate on known shift amounts only.
-        const auto amountAttr = getConstantValue(op.getAmount())
-                                    .template dyn_cast_or_null<IntegerAttr>();
-        const auto srcAmountAttr =
-            getConstantValue(src.getAmount())
-                .template dyn_cast_or_null<IntegerAttr>();
-        if (!amountAttr || !srcAmountAttr) return failure();
+        const auto amount = llvm::dyn_cast_or_null<match::ConstIndex>(
+            getConstantValue(op.getAmount()));
+        const auto srcAmount = llvm::dyn_cast_or_null<match::ConstIndex>(
+            getConstantValue(src.getAmount()));
+        if (!amount || !srcAmount) return failure();
 
         // Operate on well-formed rotations only.
-        const auto bitWidth = op.getType()
-                                  .template cast<BitSequenceLikeType>()
+        const auto bitWidth = llvm::cast<BitSequenceLikeType>(op.getType())
                                   .getElementType()
                                   .getBitWidth();
-        const auto amount = amountAttr.getValue().getZExtValue();
-        const auto srcAmount = srcAmountAttr.getValue().getZExtValue();
         if (amount > bitWidth || srcAmount > bitWidth) return failure();
 
         // Compute the rotation amount relative to the source.
@@ -510,21 +536,15 @@ void ShlOp::getCanonicalizationPatterns(
     RewritePatternSet &patterns,
     MLIRContext* context)
 {
-    patterns.add<ZeroFunnel<ShlOp>, BalanceRotations<ShlOp, ShrOp>>(context);
+    patterns.add<
+        ZeroFunnel<ShlOp>,
+        FunnelOnly<ShlOp>,
+        BalanceRotations<ShlOp, ShrOp>>(context);
 }
 
 OpFoldResult ShlOp::fold(ShlOp::FoldAdaptor adaptor)
 {
-    // Shift amount must be known to perform folding.
-    const auto amountAttr =
-        adaptor.getAmount()
-            .dyn_cast_or_null<ub::ValueOrPoisonAttr<IntegerAttr>>();
-    if (!amountAttr) return {};
-
-    return BitFolder::bitShl(
-        combine(adaptor.getValue(), getValue()),
-        amountAttr,
-        combine(adaptor.getFunnel(), getFunnel()));
+    return BitFolder::bitShl(*this, adaptor.getOperands());
 }
 
 void ShrOp::print(OpAsmPrinter &p)
@@ -598,23 +618,17 @@ LogicalResult ShrOp::verify()
 
 OpFoldResult ShrOp::fold(ShrOp::FoldAdaptor adaptor)
 {
-    // Shift amount must be known to perform folding.
-    const auto amountAttr =
-        adaptor.getAmount()
-            .dyn_cast_or_null<ub::ValueOrPoisonAttr<IntegerAttr>>();
-    if (!amountAttr) return {};
-
-    return BitFolder::bitShr(
-        combine(adaptor.getValue(), getValue()),
-        amountAttr,
-        combine(adaptor.getFunnel(), getFunnel()));
+    return BitFolder::bitShr(*this, adaptor.getOperands());
 }
 
 void ShrOp::getCanonicalizationPatterns(
     RewritePatternSet &patterns,
     MLIRContext* context)
 {
-    patterns.add<ZeroFunnel<ShrOp>, BalanceRotations<ShrOp, ShlOp>>(context);
+    patterns.add<
+        ZeroFunnel<ShrOp>,
+        FunnelOnly<ShrOp>,
+        BalanceRotations<ShrOp, ShlOp>>(context);
 }
 
 //===----------------------------------------------------------------------===//
@@ -623,35 +637,17 @@ void ShrOp::getCanonicalizationPatterns(
 
 OpFoldResult CountOp::fold(CountOp::FoldAdaptor adaptor)
 {
-    // Fold if operand is constant.
-    if (const auto attr =
-            adaptor.getValue().dyn_cast_or_null<ValueOrPoisonAttr>())
-        return BitFolder::bitCount(attr);
-
-    // Otherwise no folding is performed.
-    return {};
+    return BitFolder::bitCount(*this, adaptor.getOperands());
 }
 
 OpFoldResult ClzOp::fold(ClzOp::FoldAdaptor adaptor)
 {
-    // Fold if operand is constant.
-    if (const auto attr =
-            adaptor.getValue().dyn_cast_or_null<ValueOrPoisonAttr>())
-        return BitFolder::bitClz(attr);
-
-    // Otherwise no folding is performed.
-    return {};
+    return BitFolder::bitClz(*this, adaptor.getOperands());
 }
 
 OpFoldResult CtzOp::fold(CtzOp::FoldAdaptor adaptor)
 {
-    // Fold if operand is constant.
-    if (const auto attr =
-            adaptor.getValue().dyn_cast_or_null<ValueOrPoisonAttr>())
-        return BitFolder::bitCtz(attr);
-
-    // Otherwise no folding is performed.
-    return {};
+    return BitFolder::bitCtz(*this, adaptor.getOperands());
 }
 
 //===----------------------------------------------------------------------===//

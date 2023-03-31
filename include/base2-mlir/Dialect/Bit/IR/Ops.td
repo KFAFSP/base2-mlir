@@ -217,6 +217,7 @@ def Bit_SelectOp : Bit_Op<
     let hasCustomAssemblyFormat = 1;
 
     let hasFolder = 1;
+    let hasCanonicalizer = 1;
 }
 
 //===----------------------------------------------------------------------===//

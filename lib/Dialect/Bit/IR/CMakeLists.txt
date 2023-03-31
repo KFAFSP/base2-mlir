@@ -1,6 +1,8 @@
 add_mlir_dialect_library(BitDialect
         Attributes.cpp
         Base.cpp
+        Folders.cpp
+        Matchers.cpp
         Ops.cpp
         Types.cpp
 
