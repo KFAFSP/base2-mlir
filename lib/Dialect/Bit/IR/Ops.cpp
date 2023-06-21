@@ -29,7 +29,7 @@ using namespace mlir::ext;
 
 LogicalResult ConstantOp::inferReturnTypes(
     MLIRContext*,
-    Optional<Location>,
+    std::optional<Location>,
     ValueRange,
     DictionaryAttr attributes,
     OpaqueProperties,

@@ -4,7 +4,6 @@
 /// @author     Karl F. A. Friebel (karl.friebel@tu-dresden.de)
 
 #include "base2-mlir/Dialect/Bit/IR/Folders.h"
-
 #include "base2-mlir/Dialect/Bit/IR/Matchers.h"
 #include "mlir/IR/OpDefinition.h"
 #include "mlir/IR/TypeUtilities.h"
@@ -65,7 +64,8 @@ OpFoldResult BitFolder::bitCmp(CmpOp op, ArrayRef<Attribute> operands)
                     return matches(*l == *r, pred);
                 },
                 rhs,
-                IntegerType::get(op.getContext(), 1));
+                IntegerType::get(op.getContext(), 1)
+                    .dyn_cast<BitSequenceType>());
         });
 
     return folder(op, operands);

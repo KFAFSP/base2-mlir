@@ -33,7 +33,7 @@ BitSequenceAttr::get(BitSequenceType type, const BitSequence &bits)
     const auto bitWidth = type.getBitWidth();
     const auto raw = bits.asUInt().trunc(bitWidth);
 
-    return TypeSwitch<Type, Attribute>(type)
+    return TypeSwitch<BitSequenceType, BitSequenceAttr>(type)
         .template Case<IntegerType>([&](IntegerType intTy) -> BitSequenceAttr {
             // NOTE: MLIR APInt literals cannot parse more than 96 bits in
             //       hexadecimal. Types exceeding that length _must_ be encoded
@@ -86,7 +86,8 @@ DenseBitSequencesAttr::getData(ShapedType type, ArrayRef<BitSequence> values)
     const auto dataElementTy =
         elementTy.isa<IntegerType, FloatType>()
             ? elementTy
-            : IntegerType::get(type.getContext(), elementTy.getBitWidth());
+            : IntegerType::get(type.getContext(), elementTy.getBitWidth())
+                  .dyn_cast<BitSequenceType>();
     const auto dataTy = type.cloneWith(std::nullopt, dataElementTy);
 
     // Serialize the values into a raw data buffer in MLIR layout.

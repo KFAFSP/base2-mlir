@@ -4,7 +4,6 @@
 /// @author     Karl F. A. Friebel (karl.friebel@tu-dresden.de)
 
 #include "base2-mlir/Conversion/BitToLLVM/BitToLLVM.h"
-
 #include "base2-mlir/Dialect/Bit/IR/Bit.h"
 #include "mlir/Conversion/IndexToLLVM/IndexToLLVM.h"
 #include "mlir/Conversion/LLVMCommon/Pattern.h"
@@ -53,7 +52,8 @@ struct ConvertConstant : ConvertOpToLLVMPattern<ConstantOp> {
             // Convert to machine integer bits.
             const auto bitWidth =
                 value.getType().getElementType().getBitWidth();
-            const auto machineTy = rewriter.getIntegerType(bitWidth);
+            const auto machineTy =
+                rewriter.getIntegerType(bitWidth).dyn_cast<BitSequenceType>();
             value = adaptor.getValue().bitCastElements(machineTy);
         }
 
