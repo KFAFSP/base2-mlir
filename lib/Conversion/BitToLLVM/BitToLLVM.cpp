@@ -66,7 +66,8 @@ struct ConvertConstant : ConvertOpToLLVMPattern<ConstantOp> {
             unsigned resultBitwidth = intTy.getWidth();
             auto attrTy = rewriter.getIntegerType(resultBitwidth);
             attr = rewriter.getIntegerAttr(attrTy, resultBitwidth);
-        }
+        } // This is not the correct code to determin the TypedAttr there
+          // TODO: Find another way to manage this!
 
         // Create the LLVM mlir.constant operation.
         // NOTE: If we changed the type, the ConversionPatternRewriter will
@@ -237,13 +238,13 @@ struct ConvertScan : ConvertOpToLLVMPattern<From> {
                               .create<LLVM::ConstantOp>(
                                   op.getLoc(),
                                   rewriter.getBoolAttr(false))
-                              .getResult();
+                              .getValue();
         const auto result = rewriter
                                 .create<To>(
                                     op.getLoc(),
                                     this->getTypeConverter()->getIndexType(),
                                     adaptor.getValue(),
-                                    rewriter.getIntegerAttr(flag.getType(), 1))
+                                    flag.template cast<IntegerAttr>())
                                 .getResult();
         rewriter.replaceOpWithNewOp<index::CastUOp>(op, op.getType(), result);
         return success();
