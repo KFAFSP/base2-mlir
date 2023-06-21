@@ -21,8 +21,8 @@ The following CMake variables can be configured:
 
 |       Name | Type     | Description |
 | ---------: | :------- | --- |
-| `LLVM_DIR` | `STRING` | Path to the CMake directory of an **LLVM** installation. <br/> *e.g. `~/tools/llvm-15/lib/cmake/llvm`* |
-| `MLIR_DIR` | `STRING` | Path to the CMake directory of an **MLIR** installation. <br/> *e.g. `~/tools/llvm-15/lib/cmake/mlir`* |
+| `LLVM_DIR` | `STRING` | Path to the CMake directory of an **LLVM** installation. <br/> *e.g. `~/tools/llvm-17/lib/cmake/llvm`* |
+| `MLIR_DIR` | `STRING` | Path to the CMake directory of an **MLIR** installation. <br/> *e.g. `~/tools/llvm-17/lib/cmake/mlir`* |
 
 ## License
 
