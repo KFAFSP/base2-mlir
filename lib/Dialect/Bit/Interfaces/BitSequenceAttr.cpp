@@ -3,9 +3,8 @@
 /// @file
 /// @author     Karl F. A. Friebel (karl.friebel@tu-dresden.de)
 
-#include "base2-mlir/Dialect/Bit/Interfaces/BitSequenceAttr.h"
-
 #include "base2-mlir/Dialect/Bit/IR/Bit.h"
+#include "base2-mlir/Dialect/Bit/Interfaces/BitSequenceAttr.h"
 
 #include "llvm/ADT/TypeSwitch.h"
 
@@ -40,7 +39,7 @@ BitSequenceAttr::get(BitSequenceType type, const BitSequence &bits)
             //       hexadecimal. Types exceeding that length _must_ be encoded
             //       as a BitsAttr!
             if (bits.size() > 96) return BitsAttr::get(type, bits);
-            return IntegerAttr::get(intTy, raw);
+            return IntegerAttr::get(intTy, raw).dyn_cast<BitSequenceAttr>();
         })
         .template Case<FloatType>([&](FloatType fltTy) {
             return FloatAttr::get(
@@ -131,7 +130,7 @@ DenseBitSequencesAttr::get(ShapedType type, DenseIntOrFPElementsAttr data)
 
     // Otherwise, wrap signless integer values in a DenseBitsAttr.
     return DenseBitsAttr::get(
-        type,
+        elementTy,
         data.bitcast(IntegerType::get(type.getContext(), bitWidth))
             .cast<DenseIntElementsAttr>());
 }
@@ -143,7 +142,7 @@ DenseBitSequencesAttr::bitCastElements(BitSequenceType elementTy) const
     assert(elementTy.getBitWidth() == getElementType().getBitWidth());
 
     // Infer the type of the result.
-    const auto outTy = getType().cloneWith(std::nullopt, elementTy);
+    const auto outTy = getShapedType().cloneWith(std::nullopt, elementTy);
 
     // Try to get the underlying data attribute.
     auto dataAttr = dyn_cast<DenseIntOrFPElementsAttr>();
@@ -166,7 +165,7 @@ DenseBitSequencesAttr DenseBitSequencesAttr::map(
 {
     // Infer the type of the result.
     if (!elementTy) elementTy = getElementType();
-    const auto outTy = getType().cloneWith(std::nullopt, elementTy);
+    const auto outTy = getShapedType().cloneWith(std::nullopt, elementTy);
 
     // If this is a splat value, we can produce a new splat.
     if (isSplat() && allowSplat)
@@ -191,11 +190,11 @@ DenseBitSequencesAttr DenseBitSequencesAttr::zip(
     bool allowSplat) const
 {
     assert(rhs);
-    assert(getType().getShape().equals(rhs.getType().getShape()));
+    assert(getShapedType().getShape().equals(rhs.getShapedType().getShape()));
 
     // Infer the type of the result.
     if (!elementTy) elementTy = getElementType();
-    const auto outTy = getType().cloneWith(std::nullopt, elementTy);
+    const auto outTy = getShapedType().cloneWith(std::nullopt, elementTy);
 
     // If both are splats, we can create a new splat.
     if (isSplat() && rhs.isSplat() && allowSplat) {
@@ -227,12 +226,12 @@ DenseBitSequencesAttr DenseBitSequencesAttr::zip(
     bool allowSplat) const
 {
     assert(arg1 && arg2);
-    assert(getType().getShape().equals(arg1.getType().getShape()));
-    assert(getType().getShape().equals(arg2.getType().getShape()));
+    assert(getShapedType().getShape().equals(arg1.getShapedType().getShape()));
+    assert(getShapedType().getShape().equals(arg2.getShapedType().getShape()));
 
     // Infer the type of the result.
     if (!elementTy) elementTy = getElementType();
-    const auto outTy = getType().cloneWith(std::nullopt, elementTy);
+    const auto outTy = getShapedType().cloneWith(std::nullopt, elementTy);
 
     // If all are splats, we can create a new splat.
     if (isSplat() && arg1.isSplat() && arg2.isSplat() && allowSplat) {

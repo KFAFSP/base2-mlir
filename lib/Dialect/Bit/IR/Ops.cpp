@@ -3,10 +3,9 @@
 /// @file
 /// @author     Karl F. A. Friebel (karl.friebel@tu-dresden.de)
 
-#include "base2-mlir/Dialect/Bit/IR/Ops.h"
-
 #include "base2-mlir/Dialect/Bit/IR/Folders.h"
 #include "base2-mlir/Dialect/Bit/IR/Matchers.h"
+#include "base2-mlir/Dialect/Bit/IR/Ops.h"
 #include "base2-mlir/Utils.h"
 #include "mlir/IR/OpImplementation.h"
 #include "mlir/IR/PatternMatch.h"
@@ -33,6 +32,7 @@ LogicalResult ConstantOp::inferReturnTypes(
     Optional<Location>,
     ValueRange,
     DictionaryAttr attributes,
+    OpaqueProperties,
     RegionRange,
     SmallVectorImpl<Type> &result)
 {

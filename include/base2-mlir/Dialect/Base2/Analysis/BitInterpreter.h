@@ -176,7 +176,7 @@ public:
         if (!impl) return bit::BitSequenceLikeAttr{};
         if (rhs.getElementType() != impl) return bit::BitSequenceLikeAttr{};
 
-        const auto i1Ty = IntegerType::get(lhs.getContext(), 1);
+        // const auto i1Ty = IntegerType::get(lhs.getContext(), 1);
         return lhs.zip(
             [pred, impl](const auto &lhs, const auto &rhs) -> bit::BitSequence {
                 if (const auto ordering = cmp(impl, lhs, rhs))
@@ -187,7 +187,8 @@ public:
                 return {};
             },
             rhs,
-            i1Ty);
+            {},
+            true);
     }
     [[nodiscard]] static bit::BitSequenceLikeAttr
     cmp(PartialOrderingPredicate pred, Attribute lhs, Attribute rhs)

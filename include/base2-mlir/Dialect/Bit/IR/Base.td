@@ -30,7 +30,7 @@ def Bit_Dialect : Dialect {
 
     let hasConstantMaterializer = 1;
     let useDefaultAttributePrinterParser = 1;
-    let useFoldAPI = kEmitFoldAdaptorFolder;
+    // let useFoldAPI = kEmitFoldAdaptorFolder;
 
     code extraClassDeclaration = [{
     private:

@@ -26,7 +26,7 @@ def Base2_Dialect : Dialect {
 
     let hasConstantMaterializer = 1;
     let useDefaultTypePrinterParser = 0;
-    let useFoldAPI = kEmitFoldAdaptorFolder;
+    // let useFoldAPI = kEmitFoldAdaptorFolder;
 
     code extraClassDeclaration = [{
     private:

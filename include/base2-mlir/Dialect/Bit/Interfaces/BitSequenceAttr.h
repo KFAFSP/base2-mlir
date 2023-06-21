@@ -124,7 +124,9 @@ public:
             if (attr.isa<DenseIntOrFPElementsAttr>()) return attr;
         }
 
-        return get(attr.getType(), llvm::to_vector(attr.getValues()));
+        return get(
+            attr.getType().dyn_cast<ShapedType>(),
+            llvm::to_vector(attr.getValues()));
     }
 
     /// Bit casts all elements.
@@ -183,7 +185,10 @@ public:
     /// Gets the BitSequence values.
     [[nodiscard]] range getValues() const
     {
-        return range(getType(), value_begin(), value_end());
+        return range(
+            getType().dyn_cast<ShapedType>(),
+            value_begin(),
+            value_end());
     }
 
     /// Gets the splat BitSequence value.

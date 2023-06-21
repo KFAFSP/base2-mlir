@@ -468,10 +468,7 @@ public:
     //===------------------------------------------------------------------===//
 
     /// Counts the number of 1 bits.
-    [[nodiscard]] bit_width_t countOnes() const
-    {
-        return asUInt().countPopulation();
-    }
+    [[nodiscard]] bit_width_t countOnes() const { return asUInt().popcount(); }
     /// Counts the number of leading 0 bits.
     [[nodiscard]] bit_width_t countLeadingZeros() const
     {
