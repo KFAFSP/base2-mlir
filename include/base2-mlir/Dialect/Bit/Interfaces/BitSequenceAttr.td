@@ -24,7 +24,7 @@ def Bit_BitSequenceAttr : AttrInterface<"BitSequenceAttr"> {
     let methods = [
         InterfaceMethod<
             /*desc=*/"Gets the BitSequenceType.",
-            /*retTy=*/"BitSequenceType",
+            /*retTy=*/"Type",
             /*methodName=*/"getType",
             /*args=*/(ins),
             /*methodBody=*/"",
@@ -60,7 +60,7 @@ def Bit_BitSequenceAttr : AttrInterface<"BitSequenceAttr"> {
         {
             assert(attr);
 
-            return get(attr.getType(), attr.getValue());
+            return get(attr.getType().cast<BitSequenceType>(), attr.getValue());
         }
 
         /// Performs a bit cast to @p type .
@@ -70,7 +70,7 @@ def Bit_BitSequenceAttr : AttrInterface<"BitSequenceAttr"> {
         [[nodiscard]] BitSequenceAttr bitCast(BitSequenceType type) const
         {
             assert(type);
-            assert(type.getBitWidth() == getType().getBitWidth());
+            assert(type.getBitWidth() == getType().cast<BitSequenceType>().getBitWidth());
 
             return get(type, getValue());
         }
@@ -84,7 +84,7 @@ def Bit_BitSequenceAttr : AttrInterface<"BitSequenceAttr"> {
             UnaryBitSequenceFn fn,
             BitSequenceType elementTy = {}) const
         {
-            if (!elementTy) elementTy = getType();
+            if (!elementTy) elementTy = getType().cast<BitSequenceType>();
 
             return BitSequenceAttr::get(elementTy, fn(getValue()));
         }
@@ -101,7 +101,7 @@ def Bit_BitSequenceAttr : AttrInterface<"BitSequenceAttr"> {
         {
             assert(rhs);
 
-            if (!elementTy) elementTy = getType();
+            if (!elementTy) elementTy = getType().cast<BitSequenceType>();
 
             return BitSequenceAttr::get(
                 elementTy,
@@ -121,7 +121,7 @@ def Bit_BitSequenceAttr : AttrInterface<"BitSequenceAttr"> {
         {
             assert(arg1 && arg2);
 
-            if (!elementTy) elementTy = getType();
+            if (!elementTy) elementTy = getType().cast<BitSequenceType>();
 
             return BitSequenceAttr::get(
                 elementTy,

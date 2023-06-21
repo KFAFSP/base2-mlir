@@ -4,7 +4,6 @@
 /// @author     Karl F. A. Friebel (karl.friebel@tu-dresden.de)
 
 #include "base2-mlir/Dialect/Bit/IR/Attributes.h"
-
 #include "base2-mlir/Dialect/Bit/IR/Bit.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/DialectImplementation.h"

@@ -287,7 +287,7 @@ public:
     [[nodiscard]] BitSequenceLikeType getType() const
     {
         if (const auto bits = dyn_cast<BitSequenceAttr>())
-            return bits.getType();
+            return bits.getType().cast<BitSequenceLikeType>();
 
         return cast<DenseBitSequencesAttr>()
             .getType()
@@ -297,7 +297,7 @@ public:
     [[nodiscard]] BitSequenceType getElementType() const
     {
         if (const auto bits = dyn_cast<BitSequenceAttr>())
-            return bits.getType();
+            return bits.getType().cast<BitSequenceType>();
 
         return cast<DenseBitSequencesAttr>().getElementType();
     }

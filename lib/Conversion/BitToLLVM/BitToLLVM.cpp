@@ -60,10 +60,18 @@ struct ConvertConstant : ConvertOpToLLVMPattern<ConstantOp> {
         // Ensure we are using built-in attributes.
         value = BitSequenceLikeAttr::get(value);
 
+        // Get the TyedAttr from BitSequenceAttr
+        TypedAttr attr;
+        if (auto intTy = dyn_cast<IntegerType>(value.getType())) {
+            unsigned resultBitwidth = intTy.getWidth();
+            auto attrTy = rewriter.getIntegerType(resultBitwidth);
+            attr = rewriter.getIntegerAttr(attrTy, resultBitwidth);
+        }
+
         // Create the LLVM mlir.constant operation.
         // NOTE: If we changed the type, the ConversionPatternRewriter will
         //       automatically insert a SourceMaterialization.
-        rewriter.replaceOpWithNewOp<LLVM::ConstantOp>(op, value);
+        rewriter.replaceOpWithNewOp<LLVM::ConstantOp>(op, attr);
         return success();
     }
 };
@@ -235,7 +243,7 @@ struct ConvertScan : ConvertOpToLLVMPattern<From> {
                                     op.getLoc(),
                                     this->getTypeConverter()->getIndexType(),
                                     adaptor.getValue(),
-                                    flag)
+                                    rewriter.getIntegerAttr(flag.getType(), 1))
                                 .getResult();
         rewriter.replaceOpWithNewOp<index::CastUOp>(op, op.getType(), result);
         return success();
